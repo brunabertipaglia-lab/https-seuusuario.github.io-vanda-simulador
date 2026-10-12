@@ -1,0 +1,16 @@
+name: Testes do núcleo da simulação
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Executar testes Edit Mode do núcleo (fora da Unity)
+        run: dotnet test tools/CoreTests --nologo
