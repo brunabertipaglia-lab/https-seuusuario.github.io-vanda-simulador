@@ -94,7 +94,8 @@ namespace CapiTinkering.Simulation
             ["hud.button_language"] = "Idioma: Português",
             ["hud.button_motion_reduced"] = "Movimento reduzido: SIM",
             ["hud.button_motion_full"] = "Movimento reduzido: NÃO",
-            ["hud.capi_name"] = "Capi"
+            ["hud.capi_name"] = "Capi",
+            ["hud.title"] = "{0} · Missão Lunar — Etapa 1: Energia"
         };
 
         private static readonly Dictionary<string, string> En = new Dictionary<string, string>
@@ -175,8 +176,15 @@ namespace CapiTinkering.Simulation
             ["hud.button_language"] = "Language: English",
             ["hud.button_motion_reduced"] = "Reduced motion: YES",
             ["hud.button_motion_full"] = "Reduced motion: NO",
-            ["hud.capi_name"] = "Capi"
+            ["hud.capi_name"] = "Capi",
+            ["hud.title"] = "{0} · Lunar Mission — Stage 1: Power"
         };
+
+        /// <summary>
+        /// Nome da equipe exibido no jogo. ÚNICO ponto de troca: o logo oficial grafa "CAPY TINKERING",
+        /// enquanto os textos de planejamento usam "CAPI TINKERING" (decisão pendente da equipe).
+        /// </summary>
+        public const string TeamName = "CAPI TINKERING";
 
         public static GameLanguage Language { get; set; } = GameLanguage.PortugueseBrazil;
 

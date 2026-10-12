@@ -27,6 +27,7 @@ namespace CapiTinkering.Game
         [SerializeField] private MissionController controller;
 
         [Header("Textos")]
+        [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text turnText;
         [SerializeField] private TMP_Text objectiveText;
         [SerializeField] private TMP_Text energyText;
@@ -154,6 +155,8 @@ namespace CapiTinkering.Game
             var last = state.History.Count > 0 ? state.History[state.History.Count - 1] : null;
             var preview = session.PreviewNextTurn();
 
+            Set(titleText, TextTable.Get("hud.title", TextTable.TeamName));
+
             // Turno e tempo simulado
             int displayTurn = Math.Min(state.TurnsCompleted + 1, p.TotalTurns);
             double elapsed = state.ElapsedHours;
@@ -220,6 +223,9 @@ namespace CapiTinkering.Game
             Set(capiSeverityText, TextTable.Get("hud.capi_name") + " · " + message.SeverityLabel);
             Set(capiMessageText, message.Text);
             if (capiPanel != null) capiPanel.color = BrandPalette.ForSeverity(message.Severity);
+            var capiTextColor = BrandPalette.TextOnSeverity(message.Severity);
+            if (capiSeverityText != null) capiSeverityText.color = capiTextColor;
+            if (capiMessageText != null) capiMessageText.color = capiTextColor;
 
             // Botões
             if (advanceButton != null) advanceButton.interactable = session.CanAdvance;

@@ -25,6 +25,9 @@ namespace CapiTinkering.EditorTools
         private const string MaterialsFolder = DataFolder + "/Materials";
         private const string ScenesFolder = Root + "/Scenes";
         private const string ScenePath = ScenesFolder + "/Etapa1_Energia.unity";
+        private const string ArtFolder = Root + "/Art";
+        private const string PortraitPath = ArtFolder + "/Capi_Portrait.png";
+        private const string LogoPath = ArtFolder + "/CapyTinkering_Logo.png";
 
         [MenuItem("Capi Tinkering/Etapa 1/Criar dados e cena", priority = 0)]
         public static void BuildAll()
@@ -96,7 +99,7 @@ namespace CapiTinkering.EditorTools
             camera.orthographic = true;
             camera.orthographicSize = 6.5f;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = BrandPalette.Navy;
+            camera.backgroundColor = BrandPalette.NavyDeep;
             cameraGo.transform.SetPositionAndRotation(new Vector3(-10f, 10f, -10f), Quaternion.Euler(35.264f, 45f, 0f));
             // Desloca a base para a direita da tela, deixando espaço ao painel à esquerda
             cameraGo.transform.position += cameraGo.transform.right * -3.5f;
@@ -185,7 +188,32 @@ namespace CapiTinkering.EditorTools
             var layout = Vertical(left.gameObject, 10, new RectOffset(24, 24, 24, 24));
             layout.childAlignment = TextAnchor.UpperLeft;
 
-            Text("Title", left, "CAPI TINKERING · Missão Lunar — Etapa 1: Energia", 30, FontStyles.Bold, BrandPalette.Turquoise);
+            // Linha de título: logo oficial + nome da missão (texto vem da TextTable)
+            var titleRow = new GameObject("TitleRow", typeof(RectTransform)).GetComponent<RectTransform>();
+            titleRow.SetParent(left, false);
+            var titleLayout = titleRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            titleLayout.spacing = 16f;
+            titleLayout.childAlignment = TextAnchor.MiddleLeft;
+            titleLayout.childControlWidth = true;
+            titleLayout.childControlHeight = true;
+            titleLayout.childForceExpandWidth = false;
+            titleLayout.childForceExpandHeight = false;
+            titleRow.gameObject.AddComponent<LayoutElement>().preferredHeight = 96f;
+            var logoSprite = LoadSprite(LogoPath);
+            if (logoSprite != null)
+            {
+                var logo = new GameObject("Logo", typeof(RectTransform), typeof(Image));
+                logo.transform.SetParent(titleRow, false);
+                var logoImage = logo.GetComponent<Image>();
+                logoImage.sprite = logoSprite;
+                logoImage.preserveAspect = true;
+                logoImage.raycastTarget = false;
+                var logoLayout = logo.AddComponent<LayoutElement>();
+                logoLayout.preferredWidth = 96f;
+                logoLayout.preferredHeight = 96f;
+            }
+            var title = Text("Title", titleRow, "", 28, FontStyles.Bold, BrandPalette.Cream);
+            title.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
             var turn = Text("TurnText", left, "", 24, FontStyles.Bold, BrandPalette.White);
             var objective = Text("ObjectiveText", left, "", 22, FontStyles.Normal, BrandPalette.White);
             var outcome = Text("OutcomeText", left, "", 22, FontStyles.Italic, BrandPalette.Orange);
@@ -213,8 +241,8 @@ namespace CapiTinkering.EditorTools
             row.childControlWidth = true;
             row.childControlHeight = true;
             toggles.gameObject.AddComponent<LayoutElement>().preferredHeight = 56f;
-            var commButton = ButtonWithLabel("Toggle_Communication", toggles, BrandPalette.NavyLight, out var commLabel);
-            var researchButton = ButtonWithLabel("Toggle_Research", toggles, BrandPalette.NavyLight, out var researchLabel);
+            var commButton = ButtonWithLabel("Toggle_Communication", toggles, BrandPalette.NavyLight, BrandPalette.White, out var commLabel);
+            var researchButton = ButtonWithLabel("Toggle_Research", toggles, BrandPalette.NavyLight, BrandPalette.White, out var researchLabel);
 
             var actions = new GameObject("ActionButtons", typeof(RectTransform)).GetComponent<RectTransform>();
             actions.SetParent(left, false);
@@ -224,8 +252,9 @@ namespace CapiTinkering.EditorTools
             actionRow.childControlWidth = true;
             actionRow.childControlHeight = true;
             actions.gameObject.AddComponent<LayoutElement>().preferredHeight = 64f;
-            var advance = ButtonWithLabel("AdvanceTurnButton", actions, BrandPalette.Orange, out var advanceLabel);
-            var restart = ButtonWithLabel("RestartButton", actions, BrandPalette.NavyLight, out var restartLabel);
+            // Texto azul-marinho sobre laranja (6,2:1); branco sobre laranja teria só 2,7:1
+            var advance = ButtonWithLabel("AdvanceTurnButton", actions, BrandPalette.Orange, BrandPalette.Navy, out var advanceLabel);
+            var restart = ButtonWithLabel("RestartButton", actions, BrandPalette.NavyLight, BrandPalette.White, out var restartLabel);
 
             var options = new GameObject("OptionButtons", typeof(RectTransform)).GetComponent<RectTransform>();
             options.SetParent(left, false);
@@ -235,8 +264,8 @@ namespace CapiTinkering.EditorTools
             optionRow.childControlWidth = true;
             optionRow.childControlHeight = true;
             options.gameObject.AddComponent<LayoutElement>().preferredHeight = 44f;
-            var language = ButtonWithLabel("LanguageButton", options, BrandPalette.NavyLight, out var languageLabel);
-            var motion = ButtonWithLabel("ReduceMotionButton", options, BrandPalette.NavyLight, out var motionLabel);
+            var language = ButtonWithLabel("LanguageButton", options, BrandPalette.NavyLight, BrandPalette.White, out var languageLabel);
+            var motion = ButtonWithLabel("ReduceMotionButton", options, BrandPalette.NavyLight, BrandPalette.White, out var motionLabel);
 
             // Painel do Capi (inferior direito)
             var capi = Panel("CapiPanel", canvasGo.transform, BrandPalette.NavyLight, 0.95f);
@@ -249,14 +278,25 @@ namespace CapiTinkering.EditorTools
             capiRow.childForceExpandWidth = false;
             capiRow.childForceExpandHeight = true;
 
-            // Retrato provisório: substitua o sprite pela arte 2D do Capi (Texture Type = Sprite (2D and UI))
+            // Retrato 2D do Capi (Art/Capi_Portrait.png). Sem a imagem, usa um bloco turquesa com o nome.
             var portrait = Panel("CapiPortrait", capi, BrandPalette.Turquoise, 1f);
             var portraitLayout = portrait.gameObject.AddComponent<LayoutElement>();
             portraitLayout.preferredWidth = 190f;
             portraitLayout.flexibleWidth = 0f;
-            var portraitLabel = Text("PortraitLabel", portrait, "CAPI", 40, FontStyles.Bold, BrandPalette.Navy);
-            portraitLabel.alignment = TextAlignmentOptions.Center;
-            Stretch(portraitLabel.rectTransform);
+            var portraitSprite = LoadSprite(PortraitPath);
+            if (portraitSprite != null)
+            {
+                var portraitImage = portrait.GetComponent<Image>();
+                portraitImage.sprite = portraitSprite;
+                portraitImage.color = Color.white;
+                portraitImage.preserveAspect = true;
+            }
+            else
+            {
+                var portraitLabel = Text("PortraitLabel", portrait, "CAPI", 40, FontStyles.Bold, BrandPalette.Navy);
+                portraitLabel.alignment = TextAlignmentOptions.Center;
+                Stretch(portraitLabel.rectTransform);
+            }
 
             var capiTexts = new GameObject("CapiTexts", typeof(RectTransform)).GetComponent<RectTransform>();
             capiTexts.SetParent(capi, false);
@@ -268,6 +308,7 @@ namespace CapiTinkering.EditorTools
             // HUD e ligações
             var hud = canvasGo.AddComponent<MissionHUD>();
             SetRef(hud, "controller", controller);
+            SetRef(hud, "titleText", title);
             SetRef(hud, "turnText", turn);
             SetRef(hud, "objectiveText", objective);
             SetRef(hud, "energyText", energy);
@@ -316,6 +357,20 @@ namespace CapiTinkering.EditorTools
         // ---------------------------------------------------------------- Utilidades
 
         private static bool TmpResourcesAvailable() => Resources.Load<TMP_Settings>("TMP Settings") != null;
+
+        /// <summary>Carrega uma imagem como Sprite, corrigindo o tipo de importação se necessário. Nulo se não existir.</summary>
+        private static Sprite LoadSprite(string path)
+        {
+            if (AssetImporter.GetAtPath(path) is TextureImporter importer && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.SaveAndReimport();
+            }
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite == null) Debug.LogWarning("[Capi] Imagem não encontrada ou não importada como Sprite: " + path);
+            return sprite;
+        }
 
         private static T LoadOrCreate<T>(string path) where T : ScriptableObject
         {
@@ -382,7 +437,7 @@ namespace CapiTinkering.EditorTools
             return text;
         }
 
-        private static Button ButtonWithLabel(string name, Transform parent, Color color, out TMP_Text label)
+        private static Button ButtonWithLabel(string name, Transform parent, Color color, Color textColor, out TMP_Text label)
         {
             var rect = Panel(name, parent, color, 1f);
             var button = rect.gameObject.AddComponent<Button>();
@@ -391,7 +446,7 @@ namespace CapiTinkering.EditorTools
             colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f);
             button.colors = colors;
 
-            var text = Text("Label", rect, name, 22, FontStyles.Bold, BrandPalette.White);
+            var text = Text("Label", rect, name, 22, FontStyles.Bold, textColor);
             text.alignment = TextAlignmentOptions.Center;
             Stretch(text.rectTransform);
             label = text;

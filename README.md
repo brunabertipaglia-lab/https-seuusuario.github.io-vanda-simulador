@@ -10,6 +10,7 @@ Jogo educativo da equipe **CAPI TINKERING** para o NASA Space Apps Challenge 202
 | [docs/02_MODELO_SIMULACAO.md](docs/02_MODELO_SIMULACAO.md) | Variáveis, unidades, equações, ordem de atualização, classificação dos dados e estratégias verificadas |
 | [docs/03_ETAPA1_CONFIGURACAO_UNITY.md](docs/03_ETAPA1_CONFIGURACAO_UNITY.md) | Como montar, executar e verificar a etapa 1 no Unity |
 | [docs/04_DECISOES_E_BACKLOG.md](docs/04_DECISOES_E_BACKLOG.md) | Registro de decisões e backlog priorizado |
+| [docs/05_IDENTIDADE_VISUAL.md](docs/05_IDENTIDADE_VISUAL.md) | Paleta extraída do logo, contraste, arte incorporada e pendências de marca |
 
 ## Início rápido
 

@@ -33,7 +33,7 @@ Uma cena isométrica com a base lunar em formas simples, um painel de energia (i
 | `Canvas` | `MissionHUD` | `Controller`; textos TMP (`Turn`, `Objective`, `Energy`, `Flow`, `Systems`, `Forecast`, `Outcome`, `Capi Severity`, `Capi Message`); `Capi Panel` (Image); `Battery Fill` (Image com *Image Type = Filled*, *Horizontal*); botões com rótulos; `Equipment Toggles`: `communication` e `research` |
 | `EventSystem` | `InputSystemUIInputModule` (Input System) ou `StandaloneInputModule` | — |
 
-Para usar a arte 2D do Capi, importe a imagem com *Texture Type = Sprite (2D and UI)* e arraste-a para o componente `Image` de `Canvas/CapiPanel/CapiPortrait`. Uma imagem 2D não é um modelo 3D animável.
+O retrato do Capi (`Art/Capi_Portrait.png`) e o logo (`Art/CapyTinkering_Logo.png`) são aplicados automaticamente pelo menu. Na montagem manual, arraste-os para os componentes `Image` de `Canvas/CapiPanel/CapiPortrait` e de `Canvas/MissionPanel/TitleRow/Logo`; o `CapiArtImporter` já os importa como Sprite. Paleta, contraste e limitações da arte estão em `05_IDENTIDADE_VISUAL.md`.
 
 ## Como verificar
 
@@ -46,6 +46,7 @@ Para usar a arte 2D do Capi, importe a imagem com *Texture Type = Sprite (2D and
 | Concordância | Compare a previsão com o fluxo exibido após avançar | Os valores coincidem |
 | Reinício | Clique em *Reiniciar* no meio da partida | Turno 1, bateria 30,0 kWh, todos os sistemas ligados |
 | Idioma | Clique em *Idioma* | Todos os textos mudam para inglês |
+| Identidade | Observe o painel do Capi em atenção e o botão "Avançar turno" | Retrato do Capi visível; texto azul-marinho sobre laranja, legível |
 
 Fora da Unity (sem Editor): `dotnet test tools/CoreTests` executa os testes Edit Mode do núcleo.
 

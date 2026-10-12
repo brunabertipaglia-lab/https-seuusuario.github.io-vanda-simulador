@@ -4,19 +4,23 @@ using UnityEngine;
 namespace CapiTinkering.Game
 {
     /// <summary>
-    /// Cores da identidade CAPI TINKERING (azul-marinho, branco, turquesa, laranja).
-    /// Valores provisórios: substituir pelos códigos oficiais do manual de marca da equipe.
+    /// Cores da identidade CAPI TINKERING, extraídas do logo oficial (art/reference) por mediana
+    /// de pixels por faixa de matiz, em 12/10/2026. Contrastes (WCAG 2.x) verificados:
+    /// branco/Navy 16,6:1 · Cream/Navy 14,5:1 · TurquoiseGlow/Navy 12,1:1 · Orange/Navy 6,2:1
+    /// · Navy/Orange 6,2:1 · branco/Critical 5,4:1. Branco sobre laranja = 2,7:1 → PROIBIDO para texto.
     /// A cor nunca é o único sinal: todo alerta também tem rótulo textual ([!], [!!], [ok]).
     /// </summary>
     public static class BrandPalette
     {
-        public static readonly Color Navy = Hex(0x0B, 0x1F, 0x3A);
-        public static readonly Color NavyLight = Hex(0x16, 0x34, 0x5C);
+        public static readonly Color NavyDeep = Hex(0x00, 0x0E, 0x26);     // fundo do espaço no logo
+        public static readonly Color Navy = Hex(0x00, 0x1D, 0x45);         // painéis
+        public static readonly Color NavyLight = Hex(0x0E, 0x3B, 0x66);    // botões e destaques sobre Navy
         public static readonly Color White = Color.white;
-        public static readonly Color Turquoise = Hex(0x1F, 0xC7, 0xB6);
-        public static readonly Color Orange = Hex(0xFF, 0x8A, 0x3D);
-        public static readonly Color Critical = Hex(0xE5, 0x48, 0x4D);
-        public static readonly Color Muted = Hex(0x8A, 0x9B, 0xB0);
+        public static readonly Color Cream = Hex(0xFB, 0xEE, 0xD5);        // letras do logo
+        public static readonly Color Turquoise = Hex(0x00, 0xF4, 0xFA);    // anel luminoso do logo
+        public static readonly Color Orange = Hex(0xF2, 0x7F, 0x28);       // detalhes do traje e da ferramenta
+        public static readonly Color Critical = Hex(0xC0, 0x39, 0x2B);     // não está no logo: reservado a alertas críticos
+        public static readonly Color Muted = Hex(0x8F, 0xA3, 0xBF);
 
         public static Color ForSeverity(CapiSeverity severity)
         {
@@ -26,6 +30,19 @@ namespace CapiTinkering.Game
                 case CapiSeverity.Critical: return Critical;
                 case CapiSeverity.Success: return Turquoise;
                 default: return NavyLight;
+            }
+        }
+
+        /// <summary>Cor de texto legível sobre o fundo de cada severidade (contraste ≥ 4,5:1).</summary>
+        public static Color TextOnSeverity(CapiSeverity severity)
+        {
+            switch (severity)
+            {
+                case CapiSeverity.Warning:
+                case CapiSeverity.Success:
+                    return Navy;
+                default:
+                    return White;
             }
         }
 

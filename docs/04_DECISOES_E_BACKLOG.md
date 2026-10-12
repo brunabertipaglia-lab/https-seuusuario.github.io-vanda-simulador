@@ -14,6 +14,9 @@
 | D8 | 12/10/2026 | O Capi não sugere religar sistemas se isso criar déficit adiante | Evitar um conselho que leve ao erro (encontrado no balanceamento) | — |
 | D9 | 12/10/2026 | Construtor de cena por menu do Editor | Reduz erros de ligação manual na equipe | — |
 | D10 | 12/10/2026 | Unity 6.3 LTS como alvo | LTS mais recente; 6.0 LTS sai do suporte padrão em outubro de 2026 | Se a equipe já tiver outra versão instalada |
+| D12 | 12/10/2026 | Paleta extraída do logo oficial; texto azul-marinho sobre laranja e turquesa | Branco sobre laranja tem contraste 2,7:1 (reprovado) | Se o manual de marca definir outros códigos |
+| D13 | 12/10/2026 | Capi como retrato 2D na interface; nada de modelo 3D no MVP | A arte recebida é uma ilustração 2D estática | M6+ |
+| D14 | 12/10/2026 | Nome da equipe em uma única constante (`TextTable.TeamName`) | O logo diz "CAPY", o planejamento diz "CAPI" | Decisão da equipe |
 | D11 | 12/10/2026 | Etapa 1 sem aleatoriedade | Os eventos com semente entram no M4 com PRNG próprio (ex.: xorshift), pois `System.Random` não garante a mesma sequência entre runtimes | M4 |
 
 ## Backlog priorizado
@@ -22,6 +25,8 @@
 |---|---|---|
 | P0 | Validar no Editor: compilar, rodar a cena e os testes Play Mode; corrigir o que surgir | M1 |
 | P0 | Confirmar os enunciados oficiais (previstos para 28/10/2026) e atualizar a matriz | — |
+| P0 | Decidir a grafia oficial: CAPY ou CAPI TINKERING | — |
+| P1 | Obter PNG com transparência do personagem e do logo | M1 |
 | P1 | Equipamentos com massa e custo; validador de orçamento e massa com motivo exibido | M2 |
 | P1 | Duas alternativas de missão (ex.: mais baterias × mais painéis) | M2 |
 | P1 | O₂, água e alimento com consumo da tripulação e demanda não atendida | M3 |
@@ -33,4 +38,5 @@
 | P2 | Persistência local versionada (preferências e histórico) | após M6 |
 | P2 | Legendas para falas com voz, se houver áudio | M6 |
 | P3 | WebGL: testar cultura `pt-BR` (há *fallback* para a cultura invariante) e desempenho | M7 |
+| P3 | Variações de expressão do Capi (atento, preocupado, comemorando) | M6 |
 | P3 | Protocolo de avaliação de aprendizagem com estudantes (pré e pós, observação) | M7 |
