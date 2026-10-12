@@ -14,10 +14,10 @@
 | D8 | 12/10/2026 | O Capi não sugere religar sistemas se isso criar déficit adiante | Evitar um conselho que leve ao erro (encontrado no balanceamento) | — |
 | D9 | 12/10/2026 | Construtor de cena por menu do Editor | Reduz erros de ligação manual na equipe | — |
 | D10 | 12/10/2026 | Unity 6.3 LTS como alvo | LTS mais recente; 6.0 LTS sai do suporte padrão em outubro de 2026 | Se a equipe já tiver outra versão instalada |
+| D11 | 12/10/2026 | Etapa 1 sem aleatoriedade | Os eventos com semente entram no M4 com PRNG próprio (ex.: xorshift), pois `System.Random` não garante a mesma sequência entre runtimes | M4 |
 | D12 | 12/10/2026 | Paleta extraída do logo oficial; texto azul-marinho sobre laranja e turquesa | Branco sobre laranja tem contraste 2,7:1 (reprovado) | Se o manual de marca definir outros códigos |
 | D13 | 12/10/2026 | Capi como retrato 2D na interface; nada de modelo 3D no MVP | A arte recebida é uma ilustração 2D estática | M6+ |
 | D14 | 12/10/2026 | Nome da equipe em uma única constante (`TextTable.TeamName`) | O logo diz "CAPY", o planejamento diz "CAPI" | Decisão da equipe |
-| D11 | 12/10/2026 | Etapa 1 sem aleatoriedade | Os eventos com semente entram no M4 com PRNG próprio (ex.: xorshift), pois `System.Random` não garante a mesma sequência entre runtimes | M4 |
 
 ## Backlog priorizado
 
