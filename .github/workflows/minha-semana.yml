@@ -1,0 +1,25 @@
+name: Minha Semana — testes
+
+on:
+  push:
+    paths: ['minha-semana/**', '.github/workflows/minha-semana.yml']
+  pull_request:
+    paths: ['minha-semana/**', '.github/workflows/minha-semana.yml']
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minha-semana
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testes das regras
+        run: npm test
+      - name: Instalar Playwright e Chromium
+        run: npm i --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: Teste ponta a ponta (critérios de aceitação)
+        run: npm run test:e2e

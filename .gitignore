@@ -24,3 +24,6 @@ crashlytics-build.properties
 tools/**/bin/
 tools/**/obj/
 TestResults/
+
+# Minha Semana (PWA)
+node_modules/

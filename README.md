@@ -27,3 +27,9 @@ No Unity 6.3 LTS:
 4. Pressione **Play**.
 
 Os detalhes estão no documento 03.
+
+---
+
+## Outro projeto neste repositório: Minha Semana
+
+A pasta [`minha-semana/`](minha-semana/README.md) contém um aplicativo web (PWA) independente para organização de compromissos, metas semanais e revisão da semana de uma estudante adolescente. Ele não compartilha código com o jogo.
