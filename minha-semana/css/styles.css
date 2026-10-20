@@ -15,6 +15,7 @@
   --sucesso: #23704a;
   --alerta-fundo: #fff4d6;
   --alerta-texto: #6b4a00;
+  --perigo-texto: #ffffff;
 
   --cat-licao: #2a64a8;
   --cat-prova: #b4372f;
@@ -30,7 +31,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --fundo: #12161d;
     --superficie: #1b212b;
     --superficie-2: #242b37;
@@ -53,7 +54,36 @@
     --cat-projeto: #e9b955;
     --cat-outro: #aab3c2;
     --sombra: none;
+    --perigo-texto: #1b0b09;
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --fundo: #12161d;
+  --superficie: #1b212b;
+  --superficie-2: #242b37;
+  --texto: #eef1f6;
+  --texto-2: #b3bccb;
+  --borda: #343d4c;
+  --primaria: #8fb2e6;
+  --primaria-texto: #0f1722;
+  --primaria-suave: #24324a;
+  --foco: #8fb2e6;
+  --perigo: #ff8b80;
+  --sucesso: #6fd19b;
+  --alerta-fundo: #3a3016;
+  --alerta-texto: #f5d98b;
+
+  --cat-licao: #82b2ee;
+  --cat-prova: #f39088;
+  --cat-treino: #6fd19b;
+  --cat-estudo: #bba7f2;
+  --cat-projeto: #e9b955;
+  --cat-outro: #aab3c2;
+  --sombra: none;
+  --perigo-texto: #1b0b09;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -76,7 +106,9 @@ body.sem-navegacao .navegacao { display: none; }
 main {
   max-width: 640px;
   margin: 0 auto;
-  padding: max(16px, env(safe-area-inset-top)) 16px 24px;
+  padding-block: 16px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   outline: none;
 }
 main:focus-visible { outline: none; }
@@ -145,8 +177,7 @@ a { color: var(--primaria); }
 .botao.primario { background: var(--primaria); color: var(--primaria-texto); }
 .botao.secundario { background: var(--superficie); color: var(--texto); border-color: var(--borda); }
 .botao.texto { background: none; color: var(--primaria); padding-inline: 8px; }
-.botao.perigo { background: var(--perigo); color: #fff; }
-@media (prefers-color-scheme: dark) { .botao.perigo { color: #1b0b09; } }
+.botao.perigo { background: var(--perigo); color: var(--perigo-texto); }
 .perigo-texto { color: var(--perigo) !important; background: none; }
 .botao:active { transform: translateY(1px); }
 

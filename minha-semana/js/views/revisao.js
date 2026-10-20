@@ -1,5 +1,5 @@
 // Revisão semanal: resumo automático, perguntas reflexivas e evolução de 4 semanas.
-import { h, icone, campo, aviso } from '../ui.js';
+import { h, icone, campo, aviso, EMBUTIDO } from '../ui.js';
 import {
   resumoDaSemana, evolucao, semanaParaRevisar, somarDias, formatarCurta, CATEGORIAS, NOMES_STATUS,
 } from '../logic.js';
@@ -26,7 +26,7 @@ export function renderRevisao(raiz, { dados, hoje, redesenhar }) {
   raiz.append(
     h('header', { class: 'cabecalho' },
       h('h1', {}, 'Revisão da semana'),
-      h('button', { class: 'botao secundario pequeno nao-imprimir', type: 'button', onclick: () => window.print() }, 'Salvar em PDF'),
+      EMBUTIDO ? null : h('button', { class: 'botao secundario pequeno nao-imprimir', type: 'button', onclick: () => window.print() }, 'Salvar em PDF'),
     ),
     h('div', { class: 'navegador nao-imprimir' },
       h('button', { class: 'botao-icone', type: 'button', 'aria-label': 'Semana anterior', onclick: () => mover(-1) }, icone('esquerda')),

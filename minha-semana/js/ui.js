@@ -1,5 +1,8 @@
 // Utilitários de interface: criação de elementos, ícones, folhas modais e avisos.
 
+// Quando o app roda embutido em outra página (ex.: protótipo publicado), impressão e downloads ficam indisponíveis.
+export const EMBUTIDO = globalThis.MINHA_SEMANA_EMBUTIDO === true;
+
 export function h(tag, attrs = {}, ...filhos) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {

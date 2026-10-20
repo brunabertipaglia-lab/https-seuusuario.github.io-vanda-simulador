@@ -1,5 +1,5 @@
 // Ajustes: nome, lembretes, exportação/importação e privacidade. Inclui a tela de boas-vindas.
-import { h, icone, campo, aviso, confirmar, baixarArquivo } from '../ui.js';
+import { h, icone, campo, aviso, confirmar, baixarArquivo, abrirFolha, copiarTexto, EMBUTIDO } from '../ui.js';
 import { LIMITE_NOTIFICACOES_DIA, isoData } from '../logic.js';
 import * as store from '../store.js';
 import { suportaNotificacoes, pedirPermissao, permissaoAtual } from '../lembretes.js';
@@ -112,11 +112,13 @@ export function renderAjustes(raiz, { dados, redesenhar }) {
     h('section', { class: 'secao' },
       h('h2', {}, 'Meus dados'),
       h('div', { class: 'acoes-coluna' },
-        h('button', {
-          class: 'botao secundario', type: 'button',
-          onclick: () => baixarArquivo(`minha-semana-${isoData(new Date())}.json`, store.exportarJson(), 'application/json'),
-        }, 'Exportar cópia (JSON)'),
-        h('button', { class: 'botao secundario', type: 'button', onclick: () => { location.hash = '#/revisao'; setTimeout(() => window.print(), 300); } }, 'Salvar revisão da semana em PDF'),
+        EMBUTIDO
+          ? h('button', { class: 'botao secundario', type: 'button', onclick: copiarCopia }, 'Copiar cópia de segurança (JSON)')
+          : h('button', {
+            class: 'botao secundario', type: 'button',
+            onclick: () => baixarArquivo(`minha-semana-${isoData(new Date())}.json`, store.exportarJson(), 'application/json'),
+          }, 'Exportar cópia (JSON)'),
+        EMBUTIDO ? null : h('button', { class: 'botao secundario', type: 'button', onclick: () => { location.hash = '#/revisao'; setTimeout(() => window.print(), 300); } }, 'Salvar revisão da semana em PDF'),
         h('label', { class: 'botao secundario' }, importar, 'Importar cópia (JSON)'),
         h('button', {
           class: 'botao perigo', type: 'button',
@@ -134,4 +136,24 @@ export function renderAjustes(raiz, { dados, redesenhar }) {
       h('p', { class: 'apoio' }, 'Uma eventual versão com sincronização na nuvem só poderá ser ativada com o consentimento do responsável legal (LGPD, art. 14).'),
     ),
   );
+}
+
+// Versão embutida: sem downloads, a cópia é mostrada para copiar e colar em um arquivo.
+function copiarCopia() {
+  abrirFolha('Cópia de segurança', (fechar) => {
+    const area = h('textarea', { rows: '8', readonly: true, 'aria-label': 'Dados em JSON' });
+    area.value = store.exportarJson();
+    return h('div', {},
+      h('p', { class: 'apoio' }, 'Copie o texto e guarde em um arquivo .json. Para restaurar, use "Importar cópia".'),
+      area,
+      h('div', { class: 'acoes-linha' },
+        h('button', {
+          class: 'botao primario', type: 'button',
+          onclick: async () => {
+            if (await copiarTexto(area.value)) { aviso('Cópia copiada.'); fechar(); } else { area.select(); aviso('Selecione o texto e copie manualmente.'); }
+          },
+        }, 'Copiar'),
+      ),
+    );
+  });
 }
