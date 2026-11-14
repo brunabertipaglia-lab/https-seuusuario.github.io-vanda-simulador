@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Capybara to the Moon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one column console; menu/briefing/report are page sections, flight is a 5:3 canvas with HUD and touch pad. Single dark "mission control" look by choice. */
+:root{
+  --bg:#0b1530; --panel:#13224a; --panel2:#1a2d5e; --line:#2a3f78;
+  --fg:#eef3ff; --mut:#a9b7d9; --accent:#f08a24; --accent2:#ffd08a;
+  --ok:#3cc47c; --bad:#e85d5d; --info:#3aa0ff;
+  --f-body:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px}
+body{background:radial-gradient(ellipse at 85% -10%,#24407e 0,transparent 55%),radial-gradient(ellipse at 0 110%,#2a1f5c 0,transparent 50%),var(--bg);background-attachment:fixed;min-height:100%}
+.wrap{max-width:1000px;margin:0 auto;padding-block:14px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.brand{font-weight:900;font-size:19px}.brand b{color:var(--accent)}
+.hrow{display:flex;gap:8px;align-items:center}
+.pill{font-family:var(--f-mono);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--accent2)}
+.lang button{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:5px 9px;font:inherit;font-size:13px;cursor:pointer}
+.lang button.on{background:var(--accent);border-color:var(--accent);color:#1b1200;font-weight:900}
+h1{font-size:clamp(26px,5vw,40px);margin:14px 0 4px;font-weight:900;line-height:1.1;text-wrap:balance}
+h2{font-size:22px;margin:4px 0 6px;font-weight:900;text-wrap:balance}
+h3{font-size:16px;margin:0 0 6px}
+p{line-height:1.55;margin:6px 0;max-width:68ch}
+.mut{color:var(--mut)}.small{font-size:13px}
+.eyebrow{font-family:var(--f-mono);color:var(--accent);font-size:12px;letter-spacing:1.5px;text-transform:uppercase}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid>*{min-width:0}
+.opt{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%;transition:border-color .15s,transform .15s}
+.opt:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.opt:focus-visible,.btn:focus-visible,.pad button:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+.opt.right{border-color:var(--ok)}.opt.wrong{border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.btn{background:var(--accent);color:#1b1200;border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:900;font-size:16px;cursor:pointer}
+.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.end{justify-content:flex-end;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.tscroll{overflow-x:auto}
+.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:900;letter-spacing:.5px;vertical-align:middle}
+.real{background:#3cc47c26;color:#7ee2ab}.rule{background:#f08a2426;color:#ffc27d}
+.src{font-size:12px;color:var(--mut);margin-top:8px}
+.nasa{background:#163d2c;border:1px solid #2c7a55;border-radius:12px;padding:12px;margin-top:12px}
+.warn{background:#3d2a12;border:1px solid #7a5426;border-radius:12px;padding:12px;margin-top:12px}
+.effect{background:#1b2547;border:1px dashed #5a6fb0;border-radius:12px;padding:10px 12px;margin-top:10px}
+.who{display:flex;align-items:center;gap:10px;margin:6px 0;border-left:5px solid var(--c);padding-left:10px}
+.who svg{flex:none}
+.keys{font-family:var(--f-mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+
+/* flight */
+#flight{display:none}
+.stage{position:relative;width:100%;aspect-ratio:5/3;max-height:72vh;margin:10px auto 0;border-radius:14px;border:1px solid var(--line);overflow:hidden;background:#050b1d;max-width:100%}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+.hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.hud div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.hud small{display:block;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.hud b{font-family:var(--f-mono);font-size:16px;font-variant-numeric:tabular-nums}
+.fuel{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:5px}.fuel i{display:block;height:100%;background:var(--ok)}
+.status{font-family:var(--f-mono);font-size:13px;color:var(--accent2);margin-top:8px;min-height:1.4em}
+.pad{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:center;user-select:none;-webkit-user-select:none}
+.pad button{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:12px 14px;font:inherit;font-weight:900;min-width:64px;cursor:pointer;touch-action:none}
+.pad button.on{background:var(--accent);color:#1b1200;border-color:var(--accent)}
+.pad .thr{min-width:120px;background:#3a2410;border-color:var(--accent)}
+.pad .thr.on{background:var(--accent)}
+
+/* modal */
+#modal{position:fixed;inset:0;background:#050b1dd9;display:none;overflow:auto;z-index:20;padding-block:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#modal .card{max-width:720px;margin:4vh auto}
+/* story & rewards */
+.story{display:grid;gap:12px;margin-top:14px}
+.line{display:flex;gap:12px;align-items:flex-start}
+.line.r{flex-direction:row-reverse}
+.line svg,.patch svg,.who svg{flex:none}
+.bubble{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;max-width:560px;line-height:1.5;min-width:0}
+.line.r .bubble{background:var(--panel2)}
+.bubble b{display:block;font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:2px}
+.narr{font-size:13px;color:var(--mut);border-left:3px solid var(--accent);padding:4px 0 4px 10px;margin:14px 0}
+.patches{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.patch{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--mut);text-align:center;width:96px}
+.goalbox{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.goalbox>div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.goalbox .n{font-family:var(--f-mono);color:var(--accent);font-size:12px}
+.cert{border:2px solid #ffd166;background:linear-gradient(160deg,#2a2410,#13224a 60%);text-align:center}
+.cert h2{color:#ffd166}
+footer{margin-top:28px;font-size:12px;color:var(--mut);line-height:1.5;max-width:80ch}
+@media (prefers-reduced-motion:reduce){.opt{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="brand">🦫 <span id="brandMain">Capybara</span> <b id="brandSub">to the Moon</b></div>
+  <div class="hrow"><span class="pill" id="starPill">★ 0</span>
+  <span class="lang"><button data-l="en" class="on">EN</button> <button data-l="pt">PT</button></span></div>
+</header>
+<section id="screen"></section>
+<section id="flight">
+  <div class="stage"><canvas id="cv" aria-label="Flight simulation"></canvas></div>
+  <div class="status" id="status"></div>
+  <div class="hud">
+    <div><small id="hFuelL">Combustível (Δv)</small><b id="hFuel">0</b><div class="fuel"><i id="hFuelBar"></i></div></div>
+    <div><small id="hSpdL">Velocidade</small><b id="hSpd">0</b></div>
+    <div><small id="hDistL">Distância à Lua</small><b id="hDist">0</b></div>
+    <div><small id="hDomL">Domina a gravidade</small><b id="hDom">—</b></div>
+  </div>
+  <div class="pad" id="pad">
+    <button data-k="left" aria-label="Turn left">⟲</button>
+    <button data-k="thrust" class="thr" id="thrBtn">🔥</button>
+    <button data-k="right" aria-label="Turn right">⟳</button>
+    <button data-k="pro" id="proBtn">PRO</button>
+    <button data-k="retro" id="retroBtn">RETRO</button>
+    <button data-k="warp" id="warpBtn">⏩</button>
+    <button data-k="reset" id="resetBtn">↺</button>
+  </div>
+  <p class="small mut" id="keysHelp" style="text-align:center;max-width:none"></p>
+</section>
+<footer id="foot"></footer>
+</div>
+<div id="modal" role="dialog" aria-modal="true"><div class="card" id="modalCard"></div></div>
+
+<script>
+/* ===== DADOS REAIS (copiados do Mission Capybara, com fonte) ===== */
+const MISSIONS={
+ LRO:{name:"Lunar Reconnaissance Orbiter (LRO)",goal:{pt:"Mapear a Lua",en:"Map the Moon"},type:{pt:"Orbitador grande",en:"Large orbiter"},
+  massLaunch:1916,massDry:1018,massInstr:92.6,launcher:{pt:"Atlas V 401",en:"Atlas V 401"},date:"2009-06-18",
+  orbit:{pt:"Órbita polar baixa, ~50 km",en:"Low polar orbit, ~50 km"},
+  extra:[{pt:"7 instrumentos científicos, 92,6 kg no total",en:"7 science instruments, 92.6 kg in total"},
+   {pt:"Câmera LROC: pixels de 0,5 m a 50 km de altitude",en:"LROC camera: 0.5 m pixels from 50 km altitude"},
+   {pt:"Custo total da missão: US$ 504 milhões",en:"Total mission cost: US$ 504 million"}],
+  outcome:{pt:"Fotografou os locais de pouso da Apollo com detalhe de 0,5 m e produziu um mapa 3D da Lua.",en:"Imaged the Apollo landing sites at 0.5 m detail and produced a 3D map of the Moon."},
+  src:"NASA LRO/LCROSS Press Kit (2009); lroc.asu.edu; science.nasa.gov/mission/lro",
+  game:{acc:4.5,dv:52,size:1.35,feel:{pt:"Pesada: motor responde devagar, mas tem mais combustível.",en:"Heavy: slow to respond, but more fuel."}},
+  flight:[["juno",.3],["lucy",.55]],science:["hubble","landsat","webb"],realOk:true},
+ CAPSTONE:{name:"CAPSTONE",goal:{pt:"Testar a órbita do futuro Gateway",en:"Test the future Gateway's orbit"},type:{pt:"CubeSat 12U",en:"12U CubeSat"},
+  massLaunch:25,launcher:{pt:"Electron + Lunar Photon",en:"Electron + Lunar Photon"},date:"2022-06-28",
+  orbit:{pt:"Halo quase retilínea (NRHO), período 6,5 dias",en:"Near-rectilinear halo orbit (NRHO), 6.5-day period"},
+  extra:[{pt:"Viagem de baixa energia de cerca de 4 meses",en:"Low-energy trip of about 4 months"},
+   {pt:"NRHO: de ~1.500 a ~70.000 km da Lua",en:"NRHO: ~1,500 to ~70,000 km from the Moon"},
+   {pt:"Lançamento: US$ 9,95 mi · Nave: US$ 13,7 mi",en:"Launch: US$ 9.95 M · Spacecraft: US$ 13.7 M"}],
+  outcome:{pt:"Chegou à NRHO em novembro de 2022, a primeira nave nessa órbita, que é a planejada para a estação Gateway.",en:"Reached NRHO in November 2022, the first spacecraft in the orbit planned for the Gateway station."},
+  src:"NASA (Rocket Lab and Advanced Space contracts); SpaceNews; Spaceflight Now",
+  game:{acc:7,dv:44,size:.85,feel:{pt:"Leve e ágil, com pouco combustível.",en:"Light and agile, with little fuel."}},
+  flight:[["capComm",.3],["capSpin",.6]],science:["lucy","webb"],realOk:true},
+ FLASH:{name:"Lunar Flashlight",goal:{pt:"Procurar gelo no polo sul da Lua",en:"Search for ice at the lunar south pole"},type:{pt:"CubeSat 6U",en:"6U CubeSat"},
+  massLaunch:14,launcher:{pt:"Falcon 9 (carona)",en:"Falcon 9 (rideshare)"},date:"2022-12-11",
+  orbit:{pt:"Halo quase retilínea (NRHO)",en:"Near-rectilinear halo orbit (NRHO)"},
+  extra:[{pt:"Laser infravermelho de quatro cores para procurar gelo",en:"Four-colour infrared laser to look for ice"},
+   {pt:"Quatro propulsores miniaturizados com combustível “verde”",en:"Four miniaturised thrusters with “green” propellant"},
+   {pt:"Foi de carona no lançamento do módulo Hakuto-R",en:"Rode along on the Hakuto-R lander's launch"}],
+  outcome:{pt:"Não chegou à órbita lunar; missão encerrada em maio de 2023. Vários componentes novos funcionaram e as lições foram usadas em outras missões.",en:"Did not reach lunar orbit; mission ended in May 2023. Several new components worked and the lessons fed later missions."},
+  src:"NASA JPL, Lunar Flashlight; SpaceNews; Phys.org",
+  game:{acc:7,dv:50,size:.75,feel:{pt:"A mais difícil: os propulsores vão perder força.",en:"The hardest: the thrusters will lose power."}},
+  flight:[["flash",.3],["lucy",.6]],science:["juno","hubble"],realOk:false},
+ OWN:{fict:true,name:"Capy Ice Scout",goal:{pt:"Mapear o gelo do polo sul da Lua",en:"Map the ice at the lunar south pole"},type:{pt:"Pequeno orbitador da família",en:"The family's small orbiter"},
+  massLaunch:180,
+  design:[{pt:"Objetivo de Lunar Flashlight: procurar gelo de água nas crateras escuras do polo sul",en:"Lunar Flashlight's goal: look for water ice in the dark craters of the south pole"},
+   {pt:"Órbita testada pelo CAPSTONE: a halo quase retilínea, estável e econômica",en:"The orbit CAPSTONE tested: the stable, fuel-saving near-rectilinear halo"},
+   {pt:"Câmera pensada a partir do LRO, que fotografou a Lua com pixels de 0,5 m",en:"A camera inspired by LRO, which imaged the Moon with 0.5 m pixels"},
+   {pt:"Plano de contato com as três antenas da Deep Space Network",en:"A contact plan with all three Deep Space Network antennas"}],
+  outcome:{pt:"O Capy Ice Scout chegou à órbita lunar e começou a mapear as crateras escuras do polo sul. A Luna já tem a primeira pergunta científica da família.",en:"Capy Ice Scout reached lunar orbit and began mapping the dark craters of the south pole. Luna already has the family's first science question."},
+  outcomeNo:{pt:"Missões reais também falham, e cada falha vira lição. A família revisa o plano e tenta de novo.",en:"Real missions fail too, and every failure becomes a lesson. The family reviews the plan and tries again."},
+  src:"",game:{acc:6,dv:48,size:1,feel:{pt:"Equilibrada, mas enfrenta três problemas seguidos.",en:"Balanced, but faces three problems in a row."}},
+  flight:[["lucy",.25],["capComm",.45],["capSpin",.65]],science:["hubble","landsat","webb"],realOk:true}
+};
+const CARDS={
+ capComm:{kind:"COM",who:"bento",own:"CAPSTONE",when:{pt:"CAPSTONE · julho de 2022",en:"CAPSTONE · July 2022"},
+  title:{pt:"Silêncio: a nave parou de responder",en:"Silence: the spacecraft stopped answering"},
+  fact:{pt:"Logo após se separar do estágio Lunar Photon, em 4 de julho de 2022, o CAPSTONE perdeu contato com a Terra. A causa incluiu um comando com formato errado.",en:"Right after separating from the Lunar Photon stage on 4 July 2022, CAPSTONE lost contact with Earth. The cause included an incorrectly formatted command."},
+  opts:[{pt:"Continuar tentando contato pelas antenas da Deep Space Network",en:"Keep trying to reach it through the Deep Space Network antennas"},{pt:"Esperar que a nave se recupere sozinha",en:"Wait for the spacecraft to recover by itself"}],ans:0,
+  nasa:{pt:"O contato foi restabelecido cerca de um dia depois, com a ajuda da Deep Space Network da NASA.",en:"Contact was restored about a day later, with help from NASA's Deep Space Network."},src:"SpaceNews; NASA"},
+ capSpin:{kind:"ORB",who:"tito",own:"CAPSTONE",when:{pt:"CAPSTONE · setembro de 2022",en:"CAPSTONE · September 2022"},
+  title:{pt:"A nave começou a girar sem controle",en:"The spacecraft started tumbling"},
+  fact:{pt:"Em 8 de setembro de 2022, no fim de uma manobra, a nave entrou em giro. As rodas de reação não pararam o movimento, a comunicação ficou ~24 h cortada e a nave gastava mais energia do que gerava.",en:"On 8 Sept 2022, at the end of a manoeuvre, the spacecraft began tumbling. The reaction wheels could not stop it, contact was cut for ~24 h and it used more power than it made."},
+  opts:[{pt:"Modo de segurança: desligar o não essencial e estudar o problema",en:"Safe mode: switch off non-essentials and study the problem"},{pt:"Disparar os propulsores imediatamente para parar o giro",en:"Fire the thrusters immediately to stop the spin"},{pt:"Abandonar a missão",en:"Abandon the mission"}],ans:0,
+  nasa:{pt:"A equipe usou o modo de segurança, testou a solução em simulações e enviou comandos de recuperação em 7 de outubro. A nave recuperou o controle e chegou à Lua em novembro.",en:"The team used safe mode, tested the fix in simulations and sent recovery commands on 7 October. The spacecraft regained control and reached the Moon in November."},src:"Universe Today; Spaceflight Now; SpaceNews"},
+ flash:{kind:"ORB",who:"tito",own:"FLASH",when:{pt:"Lunar Flashlight · 2023",en:"Lunar Flashlight · 2023"},
+  title:{pt:"O motor não tem força para entrar na órbita da Lua",en:"The engine is too weak to enter lunar orbit"},
+  fact:{pt:"Os quatro propulsores começaram a falhar logo após o lançamento. A equipe usou o único que funcionava, mas ele também perdeu força. Causa provável: sujeira nas linhas de combustível.",en:"The four thrusters began failing soon after launch. The team used the only one still working, but it also lost thrust. Likely cause: debris in the fuel lines."},
+  opts:[{pt:"Tentar uma rota alternativa, mais fácil",en:"Try an easier alternative route"},{pt:"Insistir na órbita original",en:"Insist on the original orbit"},{pt:"Desligar a nave agora",en:"Switch the spacecraft off now"}],ans:0,
+  nasa:{pt:"A NASA tentou uma rota alternativa com sobrevoos da Lua, sem sucesso, e encerrou a missão em maio de 2023. Os componentes novos que funcionaram viraram lição para outras missões.",en:"NASA tried an alternative route with lunar flybys, without success, and ended the mission in May 2023. The new components that worked became lessons for other missions."},src:"SpaceNews; Phys.org (NASA/JPL)"},
+ juno:{kind:"ORB",who:"tito",own:null,when:{pt:"Juno · 2016–2017",en:"Juno · 2016–2017"},
+  title:{pt:"Válvulas lentas no motor principal",en:"Slow valves in the main engine"},
+  fact:{pt:"A Juno deveria reduzir sua órbita em Júpiter de 53 para 14 dias. Antes da manobra, duas válvulas de hélio levaram minutos para abrir, em vez de segundos.",en:"Juno was meant to shrink its Jupiter orbit from 53 to 14 days. Before the burn, two helium valves took minutes to open instead of seconds."},
+  opts:[{pt:"Arriscar a manobra para ter dados mais rápido",en:"Risk the burn to get data faster"},{pt:"Ficar na órbita de 53 dias, mais segura",en:"Stay in the safer 53-day orbit"}],ans:1,
+  nasa:{pt:"A NASA manteve a órbita de 53 dias. A ciência foi praticamente a mesma, apenas coletada mais devagar.",en:"NASA kept the 53-day orbit. The science was essentially the same, just collected more slowly."},src:"NASA (Feb 2017); SpaceNews"},
+ hubble:{kind:"FOTO",who:"luna",own:null,when:{pt:"Hubble · 1990",en:"Hubble · 1990"},
+  title:{pt:"As fotos chegaram borradas",en:"The pictures came back blurry"},
+  fact:{pt:"O espelho principal, de 2,4 m, tinha a borda 2,2 mícrons mais plana do que deveria, cerca de 1/50 da espessura de um fio de cabelo.",en:"The 2.4 m primary mirror's edge was 2.2 microns too flat, about 1/50 the thickness of a human hair."},
+  opts:[{pt:"Corrigir as imagens só no computador",en:"Fix the images only on the computer"},{pt:"Levar “óculos” (espelhos corretores) ao telescópio",en:"Bring “glasses” (corrective mirrors) to the telescope"},{pt:"Desistir do telescópio",en:"Give up on the telescope"}],ans:1,
+  nasa:{pt:"Em dezembro de 1993, astronautas instalaram o COSTAR, um conjunto de espelhos corretores, e uma nova câmera. As imagens ficaram nítidas.",en:"In December 1993 astronauts installed COSTAR, a set of corrective mirrors, plus a new camera. The images became sharp."},src:"NASA; ESA/Hubble"},
+ landsat:{kind:"FOTO",who:"luna",own:null,when:{pt:"Landsat 7 · maio de 2003",en:"Landsat 7 · May 2003"},
+  title:{pt:"Faixas vazias nas imagens",en:"Empty stripes in the images"},
+  fact:{pt:"Em 31 de maio de 2003 falhou o corretor de linhas de varredura. As imagens passaram a ter faixas vazias; perde-se cerca de 22% de cada cena.",en:"On 31 May 2003 the scan line corrector failed. Images gained empty stripes; about 22% of each scene is lost."},
+  opts:[{pt:"Parar de usar o satélite",en:"Stop using the satellite"},{pt:"Continuar e completar as faixas com imagens de outras datas",en:"Keep going and fill the gaps with images from other dates"}],ans:1,
+  nasa:{pt:"O satélite seguiu operando por mais de 20 anos, e as faixas foram preenchidas combinando imagens de datas diferentes.",en:"The satellite kept working for over 20 years, and the gaps were filled by combining images from different dates."},src:"NASA Landsat; USGS"},
+ webb:{kind:"FOTO",who:"iara",own:null,when:{pt:"James Webb · maio de 2022",en:"James Webb · May 2022"},
+  title:{pt:"Um micrometeoroide atingiu o espelho",en:"A micrometeoroid hit the mirror"},
+  fact:{pt:"Entre 22 e 25 de maio de 2022, um micrometeoroide atingiu o segmento C3. O erro de frente de onda dele subiu de 56 para 258 nanômetros.",en:"Between 22 and 25 May 2022 a micrometeoroid struck segment C3. Its wavefront error rose from 56 to 258 nanometres."},
+  opts:[{pt:"Reajustar a posição do segmento atingido",en:"Readjust the position of the damaged segment"},{pt:"Ignorar o dano",en:"Ignore the damage"}],ans:0,
+  nasa:{pt:"Os engenheiros reposicionaram o segmento para compensar. O telescópio continuou acima de todos os requisitos.",en:"Engineers repositioned the segment to compensate. The telescope still exceeds all its requirements."},src:"NASA; Space.com"},
+ lucy:{kind:"ENE",who:"iara",own:null,when:{pt:"Lucy · 2021–2022",en:"Lucy · 2021–2022"},
+  title:{pt:"O painel solar não abriu por completo",en:"The solar array did not fully open"},
+  fact:{pt:"Doze horas após o lançamento, em outubro de 2021, um dos dois painéis solares não abriu nem travou. Um cabo provavelmente enroscou.",en:"Twelve hours after launch in October 2021, one of the two solar arrays did not open or latch. A cord probably snagged."},
+  opts:[{pt:"Usar o painel como está",en:"Use the array as it is"},{pt:"Forçar a abertura de uma vez",en:"Force it open in one go"},{pt:"Abrir aos poucos, testando antes em solo",en:"Open it step by step, testing on the ground first"}],ans:2,
+  nasa:{pt:"A equipe testou em solo e fez várias tentativas em 2022. O painel ficou mais de 98% aberto e firme o bastante para a missão de 12 anos.",en:"The team tested on the ground and made several attempts in 2022. The array is over 98% open and stable enough for the 12-year mission."},src:"NASA (Lucy mission blog); SpaceNews"}
+};
+const KIND={COM:{pt:"COMUNICAÇÃO",en:"COMMUNICATION",c:"#0f9c9c"},ORB:{pt:"ÓRBITA",en:"ORBIT",c:"#3aa0ff"},FOTO:{pt:"FOTO",en:"IMAGING",c:"#9b6bff"},ENE:{pt:"ENERGIA",en:"POWER",c:"#2fbf8f"}};
+const CHARS={
+ luna:{name:"Luna",hex:"#9b6bff",role:{pt:"Ciência e objetivos",en:"Science & objectives"}},
+ iara:{name:"Iara",hex:"#f08a24",role:{pt:"Estrutura e energia",en:"Structure & power"}},
+ tito:{name:"Tito",hex:"#3aa0ff",role:{pt:"Navegação e lançamento",en:"Navigation & launch"}},
+ bento:{name:"Bento",hex:"#2fbf8f",role:{pt:"Comunicação e recursos",en:"Communications & resources"}}
+};
+
+/* ===== EFEITOS DE JOGO (regra do jogo, não dado real) ===== */
+// retorna {txt, apply(F)} conforme a opção escolhida
+const EFFECTS={
+ capComm:i=>i===0?{pt:"Contato restabelecido: os controles voltam na hora.",en:"Contact restored: controls come back at once.",f:()=>{}}
+   :{pt:"Os controles ficam mudos por 8 s de voo.",en:"Controls go silent for 8 s of flight.",f:F=>{F.lock=8}},
+ capSpin:i=>i===0?{pt:"Modo de segurança: a nave gira por 2 s e se estabiliza.",en:"Safe mode: the craft spins for 2 s, then stabilises.",f:F=>{F.spin=2}}
+   :i===1?{pt:"Disparar girando gasta 10 de Δv e o giro dura 6 s.",en:"Firing while tumbling costs 10 Δv and the spin lasts 6 s.",f:F=>{F.spin=6;F.fuel=Math.max(0,F.fuel-10)}}
+   :{pt:"Missão abandonada.",en:"Mission abandoned.",f:F=>{F.abandon=true}},
+ flash:i=>i===0?{pt:"Os propulsores caem para 45% da força. A rota alternativa deixa a captura mais tolerante.",en:"Thrusters drop to 45% power. The alternative route makes capture more forgiving.",f:F=>{F.mul*=.45;F.loose=true}}
+   :i===1?{pt:"Os propulsores caem para 45% da força. Sem mudar a rota, a captura continua exigente.",en:"Thrusters drop to 45% power. Without changing route, capture stays strict.",f:F=>{F.mul*=.45}}
+   :{pt:"Nave desligada. Missão encerrada.",en:"Spacecraft switched off. Mission ended.",f:F=>{F.abandon=true}},
+ juno:i=>i===1?{pt:"Escolha segura: nada muda no voo.",en:"Safe choice: nothing changes in flight.",f:()=>{}}
+   :{pt:"Arriscar travou o motor por 6 s e custou 8 de Δv.",en:"The risk locked the engine for 6 s and cost 8 Δv.",f:F=>{F.engLock=6;F.fuel=Math.max(0,F.fuel-8)}},
+ lucy:i=>i===2?{pt:"Painel quase todo aberto: potência normal.",en:"Array almost fully open: normal power.",f:()=>{}}
+   :i===0?{pt:"Com meio painel, o motor fica com 80% da força.",en:"With half an array, the engine runs at 80% power.",f:F=>{F.mul*=.8}}
+   :{pt:"Forçar danificou o painel: motor a 70% e 5 de Δv perdidos.",en:"Forcing damaged the array: engine at 70% and 5 Δv lost.",f:F=>{F.mul*=.7;F.fuel=Math.max(0,F.fuel-5)}}
+};
+
+/* ===== TEXTOS ===== */
+const T={
+pt:{sub:"Rumo à Lua",lead:"Pilote uma nave real da NASA da órbita da Terra até a órbita da Lua. No caminho, a família Capivara enfrenta problemas que aconteceram de verdade e compara cada decisão com a dos engenheiros.",
+ choose:"Escolha a missão",how:"Como jogar",
+ howTx:["Você começa em órbita baixa da Terra. Gire a nave e acenda o motor <b>no sentido do movimento</b> (botão PRO) para esticar a órbita até a Lua.","A linha laranja mostra para onde a nave vai. Ajuste o disparo até ela passar perto da Lua.","Dentro da esfera tracejada da Lua, freie (RETRO) até a linha formar uma volta fechada ao redor dela. Segure a órbita por 3 s.","Quando surgir um problema real, a família decide. Acertar a decisão da NASA vale ★."],
+ rules:"Fato real e regra do jogo",rulesTx:"Missões, problemas e decisões da NASA são reais e têm fonte. A física é simplificada: Terra e Lua ficam paradas e só um corpo puxa a nave de cada vez (cônicas remendadas, o método usado em estudos iniciais de trajetória). Combustível, efeitos dos problemas e pontuação são regras do jogo.",
+ fact:"Dado real",rule:"Regra do jogo",src:"Fonte",brief:"Briefing da missão",fly:"Iniciar voo",back:"Voltar",
+ mass:"Massa no lançamento",rocket:"Foguete",date:"Lançamento",orbit:"Órbita real",inGame:"No jogo",
+ fuelL:"Combustível (Δv)",spdL:"Velocidade",distL:"Distância à Lua",domL:"Gravidade dominante",earth:"Terra",moon:"Lua",
+ keys:"Teclado: ←/→ ou A/D giram · ↑, W ou espaço acendem o motor · P pró · R retro · T acelera o tempo",
+ st:{orbit:"Órbita da Terra. Aponte PRO e acenda o motor quando a Lua estiver à frente da linha.",coast:"Em voo livre rumo à Lua.",soi:"Dentro da esfera da Lua. Freie com RETRO para fechar a órbita.",hold:"Órbita fechada! Segure…",lock:"Sem contato com a nave…",eng:"Motor travado…",spin:"Nave girando!",nofuel:"Sem combustível."},
+ own:"Problema desta missão",arch:"Caso real de outra missão · a família aplica a lição",
+ whatNasa:"O que a NASA fez",match:"Mesma decisão da NASA! +★",nomatch:"A NASA decidiu diferente. Pense no motivo.",effect:"Efeito no voo",
+ cont:"Continuar",sci:"Operação científica",sciTx:"Em órbita! Agora a equipe opera a nave e estuda lições de outras missões.",
+ win:"Órbita lunar alcançada",fail:{earth:"A nave reentrou na Terra.",moon:"A nave colidiu com a Lua.",lost:"A nave se perdeu no espaço.",fuel:"Acabou o combustível antes da captura.",abandon:"A missão foi encerrada por decisão da equipe."},
+ retry:"Tentar o voo de novo",report:"Ver relatório",menu:"Outra missão",
+ rep:"Relatório da missão",step:"Etapa",yours:"Sua decisão",real:"Decisão real",capture:"Inserção em órbita lunar",captureOk:"Órbita alcançada",captureNo:"Não alcançada",
+ fuelLeft:"Combustível restante",realLife:"Na vida real",realDiff:"Atenção: no jogo você conseguiu, mas na vida real esta missão não chegou à órbita lunar.",
+ credits:"Dados das missões e dos problemas: NASA (press kits, NASA Science, JPL) e imprensa especializada citada em cada carta, reaproveitados do jogo Mission Capybara da equipe Capy Tinkering (NASA Space Apps Challenge 2026). Física simplificada para fins didáticos. Desenvolvido com apoio de IA (Claude). Não é afiliado à NASA nem endossado por ela.",
+ kindOrb:"órbita",tries:"tentativa",
+ story:[["luna","Mãe, pai, Tito! A Academia Espacial Capy respondeu a minha carta!"],
+  ["bento","Eles procuram uma família para formar a tripulação de controle de uma nova missão à Lua. Mas antes precisamos passar na prova."],
+  ["iara","A prova é voar de novo, no simulador, três missões reais da NASA: LRO, CAPSTONE e Lunar Flashlight."],
+  ["tito","Eu piloto até a órbita da Lua. Quando algo quebrar, decidimos juntos, e a Academia compara a nossa escolha com o que os engenheiros da NASA fizeram de verdade."],
+  ["luna","Cada missão que chega à órbita lunar ganha um emblema. Com os três emblemas, viramos Diretores de Voo e ganhamos a nossa própria missão!"]],
+ narr:"A Academia Espacial Capy e a família são fictícias. As missões, os problemas e as decisões da NASA são reais e têm fonte.",
+ begin:"Aceitar o desafio",skip:"Ver a história de novo",
+ board:"Quadro de missões",boardTx:"Conquiste os três emblemas para a família virar Diretora de Voo.",
+ rankL:"Patente da tripulação",ranks:["Cadetes","Navegadores","Engenheiros de Voo","Diretores de Voo"],
+ pNone:"A conquistar",pOk:"Emblema",pGold:"Emblema de ouro",
+ why:"Por que esta missão existe",obj:"Sua missão no simulador",
+ objs:[["Chegar à Lua","Saia da órbita da Terra, viaje até a Lua e feche uma órbita ao redor dela por 3 s. Recompensa: o emblema da missão e +★."],
+  ["Decidir como a NASA","Quando um problema real aparecer, escolha o que fazer. Cada decisão igual à dos engenheiros vale +★. Acertar todas transforma o emblema em ouro."],
+  ["Aprender com o resultado","O relatório mostra a sua escolha ao lado da decisão real e o que aconteceu de verdade com a missão."]],
+ gotPatch:"Emblema conquistado!",gotGold:"Emblema de ouro! Todas as decisões iguais às da NASA.",
+ noPatch:"Sem emblema desta vez. Tente o voo de novo.",
+ certT:"Diretores de Voo",certTx:"A família Capivara completou as três missões da prova. A Academia Espacial Capy confia a ela o comando da próxima missão lunar.",
+ storyBtn:"História",fict:"Ficção do jogo",ownH:"A missão da família",
+ ownLock:"Conquiste os três emblemas para liberar a missão criada pela família.",ownOpen:"Liberada! A família projetou a própria missão com as lições das três missões reais.",
+ designH:"Como a família projetou a nave",designTx:"Cada escolha vem de uma missão real que vocês voaram:",
+ ownEndNo:"A missão não chegou à órbita",finalT:"Missão da família cumprida",
+ finalTx:"Da carta da Luna até o primeiro mapa de gelo, a família aprendeu a decidir como uma equipe de controle de missão."},
+en:{sub:"To the Moon",lead:"Fly a real NASA spacecraft from Earth orbit to lunar orbit. On the way, the Capybara family faces problems that really happened and compares each decision with the engineers' one.",
+ choose:"Choose the mission",how:"How to play",
+ howTx:["You start in low Earth orbit. Turn the craft and fire the engine <b>along your motion</b> (PRO button) to stretch the orbit out to the Moon.","The orange line shows where the craft will go. Adjust the burn until it passes near the Moon.","Inside the Moon's dashed sphere, brake (RETRO) until the line closes into a loop around it. Hold the orbit for 3 s.","When a real problem appears, the family decides. Matching NASA's decision earns ★."],
+ rules:"Real fact and game rule",rulesTx:"Missions, problems and NASA's decisions are real and sourced. The physics is simplified: Earth and Moon stay still and only one body pulls the craft at a time (patched conics, the method used in early trajectory studies). Fuel, problem effects and scoring are game rules.",
+ fact:"Real data",rule:"Game rule",src:"Source",brief:"Mission briefing",fly:"Start flight",back:"Back",
+ mass:"Launch mass",rocket:"Rocket",date:"Launch",orbit:"Real orbit",inGame:"In the game",
+ fuelL:"Fuel (Δv)",spdL:"Speed",distL:"Distance to Moon",domL:"Dominant gravity",earth:"Earth",moon:"Moon",
+ keys:"Keyboard: ←/→ or A/D turn · ↑, W or space fire · P prograde · R retrograde · T time warp",
+ st:{orbit:"Earth orbit. Point PRO and fire when the Moon is ahead of the line.",coast:"Coasting toward the Moon.",soi:"Inside the Moon's sphere. Brake with RETRO to close the orbit.",hold:"Orbit closed! Hold…",lock:"No contact with the craft…",eng:"Engine locked…",spin:"Craft tumbling!",nofuel:"Out of fuel."},
+ own:"This mission's own problem",arch:"Real case from another mission · the family applies the lesson",
+ whatNasa:"What NASA did",match:"Same decision as NASA! +★",nomatch:"NASA decided differently. Think about why.",effect:"Effect on the flight",
+ cont:"Continue",sci:"Science operations",sciTx:"In orbit! Now the team runs the spacecraft and studies lessons from other missions.",
+ win:"Lunar orbit reached",fail:{earth:"The craft re-entered Earth.",moon:"The craft crashed into the Moon.",lost:"The craft was lost in space.",fuel:"Fuel ran out before capture.",abandon:"The team ended the mission."},
+ retry:"Retry the flight",report:"See report",menu:"Another mission",
+ rep:"Mission report",step:"Step",yours:"Your decision",real:"Real decision",capture:"Lunar orbit insertion",captureOk:"Orbit reached",captureNo:"Not reached",
+ fuelLeft:"Fuel left",realLife:"In real life",realDiff:"Note: you made it in the game, but in real life this mission did not reach lunar orbit.",
+ credits:"Mission and problem data: NASA (press kits, NASA Science, JPL) and the specialist press cited on each card, reused from the Mission Capybara game by team Capy Tinkering (NASA Space Apps Challenge 2026). Physics simplified for teaching. Built with AI assistance (Claude). Not affiliated with or endorsed by NASA.",
+ kindOrb:"orbit",tries:"attempt",
+ story:[["luna","Mum, Dad, Tito! The Capy Space Academy answered my letter!"],
+  ["bento","They're looking for a family to crew mission control on a new Moon mission. But first we have to pass their test."],
+  ["iara","The test is to fly three real NASA missions again in the simulator: LRO, CAPSTONE and Lunar Flashlight."],
+  ["tito","I fly us to lunar orbit. When something breaks, we decide together, and the Academy compares our choice with what NASA's engineers really did."],
+  ["luna","Every mission that reaches lunar orbit earns a patch. With all three patches we become Flight Directors and get a mission of our own!"]],
+ narr:"The Capy Space Academy and the family are fictional. The missions, the problems and NASA's decisions are real and sourced.",
+ begin:"Accept the challenge",skip:"See the story again",
+ board:"Mission board",boardTx:"Earn all three patches so the family becomes Flight Directors.",
+ rankL:"Crew rank",ranks:["Cadets","Navigators","Flight Engineers","Flight Directors"],
+ pNone:"Not yet earned",pOk:"Patch",pGold:"Gold patch",
+ why:"Why this mission exists",obj:"Your mission in the simulator",
+ objs:[["Reach the Moon","Leave Earth orbit, travel to the Moon and hold a closed orbit around it for 3 s. Reward: the mission patch and +★."],
+  ["Decide like NASA","When a real problem appears, choose what to do. Each decision that matches the engineers' earns +★. Match them all and the patch turns gold."],
+  ["Learn from the outcome","The report puts your choice next to the real decision and tells what really happened to the mission."]],
+ gotPatch:"Patch earned!",gotGold:"Gold patch! Every decision matched NASA's.",
+ noPatch:"No patch this time. Try the flight again.",
+ certT:"Flight Directors",certTx:"The Capybara family completed all three test missions. The Capy Space Academy trusts them to command the next lunar mission.",
+ storyBtn:"Story",fict:"Game fiction",ownH:"The family's mission",
+ ownLock:"Earn all three patches to unlock the mission the family designed.",ownOpen:"Unlocked! The family designed its own mission using the lessons of the three real missions.",
+ designH:"How the family designed the spacecraft",designTx:"Each choice comes from a real mission you flew:",
+ ownEndNo:"The mission did not reach orbit",finalT:"Family mission accomplished",
+ finalTx:"From Luna's letter to the first ice map, the family learned to decide like a mission control team."}
+};
+let L="en";
+const t=k=>T[L][k], tx=o=>o==null?"":(typeof o==="string"?o:(o[L]??o.pt));
+const $=id=>document.getElementById(id);
+
+/* ===== ESTADO ===== */
+const G={mission:null,log:[],stars:0,phase:"story",sciIdx:0,picked:null,result:null,fuelPct:0};
+/* progresso da campanha (só neste navegador) */
+let PROG={};try{PROG=JSON.parse(localStorage.getItem("capyMoonProg")||"{}")||{}}catch(e){PROG={}}
+function saveProg(){try{localStorage.setItem("capyMoonProg",JSON.stringify(PROG))}catch(e){}}
+const CORE=["LRO","CAPSTONE","FLASH"];
+const patchCount=()=>CORE.filter(k=>PROG[k]&&PROG[k].orbit).length;
+const WHY={LRO:{pt:"Antes de mandar pessoas de volta à Lua, a NASA precisava de mapas detalhados para escolher lugares seguros de pouso e achar recursos.",en:"Before sending people back to the Moon, NASA needed detailed maps to choose safe landing sites and find resources."},
+ CAPSTONE:{pt:"A futura estação Gateway vai usar uma órbita nunca usada antes. Um CubeSat barato foi na frente para testar se ela é estável na prática.",en:"The future Gateway station will use an orbit never flown before. A low-cost CubeSat went first to test whether it is stable in practice."},
+ OWN:{pt:"É a missão da própria família. Ela junta o que as três missões ensinaram: o objetivo do Lunar Flashlight, a órbita do CAPSTONE e a câmera inspirada no LRO.",en:"This is the family's own mission. It combines what the three missions taught: Lunar Flashlight's goal, CAPSTONE's orbit and a camera inspired by LRO."},
+ FLASH:{pt:"Gelo de água nas crateras escuras do polo sul pode virar água potável, oxigênio e combustível para futuras bases.",en:"Water ice in the dark craters of the south pole could become drinking water, oxygen and fuel for future bases."}};
+const PCOL={LRO:"#3aa0ff",CAPSTONE:"#2fbf8f",FLASH:"#9b6bff",OWN:"#f08a24"};
+function patchSvg(k,state,s=74){const c=PCOL[k],on=state!=="none",gold=state==="gold";
+ const lbl=k==="OWN"?"CAPY":k==="FLASH"?"FLASH":k==="CAPSTONE"?"CAPST":"LRO";
+ return `<svg width="${s}" height="${s}" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="37" fill="${on?c:"#1a2d5e"}" stroke="${gold?"#ffd166":on?"#eef3ff":"#2a3f78"}" stroke-width="${gold?5:3}" ${on?"":'stroke-dasharray="5 5"'}/>
+ <circle cx="56" cy="26" r="9" fill="${on?"#cfd3dc":"#2a3f78"}"/><path d="M14 52 Q40 30 58 30" fill="none" stroke="${on?"#ffd08a":"#2a3f78"}" stroke-width="2.5" stroke-dasharray="3 3"/>
+ <text x="40" y="62" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" font-weight="700" fill="${on?"#0b1530":"#a9b7d9"}">${lbl}</text>${gold?'<text x="40" y="22" text-anchor="middle" font-size="12" fill="#ffd166">★</text>':""}</svg>`}
+const pState=k=>PROG[k]&&PROG[k].orbit?(PROG[k].gold?"gold":"ok"):"none";
+
+function avatar(ch,s=40){const c=CHARS[ch].hex;
+ const ex=ch==="luna"?`<path d="M10 26 Q10 8 32 8 Q54 8 54 26" fill="none" stroke="#2b2b3a" stroke-width="4"/><rect x="5" y="22" width="10" height="14" rx="4" fill="#2b2b3a"/><rect x="49" y="22" width="10" height="14" rx="4" fill="#2b2b3a"/>`:ch==="bento"?`<circle cx="50" cy="52" r="10" fill="none" stroke="#dfe6f5" stroke-width="3"/><circle cx="50" cy="52" r="2" fill="#dfe6f5"/>`:"";
+ return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="${c}"/><ellipse cx="32" cy="36" rx="18" ry="16" fill="#a86d3f"/><ellipse cx="18" cy="22" rx="5" ry="4" fill="#8a5630"/><ellipse cx="46" cy="22" rx="5" ry="4" fill="#8a5630"/><ellipse cx="32" cy="44" rx="10" ry="7" fill="#7a4a28"/><circle cx="25" cy="33" r="2.6" fill="#1a1a1a"/><circle cx="39" cy="33" r="2.6" fill="#1a1a1a"/><ellipse cx="28" cy="43" rx="1.6" ry="1.2" fill="#2a1a10"/><ellipse cx="36" cy="43" rx="1.6" ry="1.2" fill="#2a1a10"/>${ex}</svg>`}
+const who=ch=>`<div class="who" style="--c:${CHARS[ch].hex}">${avatar(ch)}<div><b>${CHARS[ch].name}</b> · <span class="mut">${tx(CHARS[ch].role)}</span></div></div>`;
+const tagF=()=>`<span class="tag" style="background:#9b6bff33;color:#cdb6ff">${t("fict")}</span>`;
+const tagR=()=>`<span class="tag real">${t("fact")}</span>`, tagG=()=>`<span class="tag rule">${t("rule")}</span>`;
+
+/* ===== TELAS ===== */
+function show(phase){G.phase=phase;render()}
+function render(){
+ document.documentElement.lang=L==="pt"?"pt-BR":"en";
+ $("brandSub").textContent=t("sub"); $("brandMain").textContent=L==="pt"?"Capivara":"Capybara"; $("starPill").textContent="★ "+G.stars; $("foot").textContent=t("credits");
+ $("hFuelL").textContent=t("fuelL");$("hSpdL").textContent=t("spdL");$("hDistL").textContent=t("distL");$("hDomL").textContent=t("domL");
+ $("keysHelp").textContent=t("keys");
+ const fl=G.phase==="flight"; $("flight").style.display=fl?"block":"none";
+ const s=$("screen");
+ s.innerHTML=fl?`<div class="eyebrow" style="margin-top:12px">${MISSIONS[G.mission].name}</div>`:({story:scStory,menu:scMenu,brief:scBrief,report:scReport}[G.phase]||(()=>""))();
+ bindScreen(); if(fl) resizeCanvas();
+}
+function scStory(){
+ return `<h1>${L==="pt"?"Capivara Rumo à Lua":"Capybara to the Moon"}</h1><p class="mut">${t("lead")}</p>
+ <div class="story">${t("story").map(([c,s],i)=>`<div class="line ${i%2?"r":""}">${avatar(c,48)}<div class="bubble" style="border-color:${CHARS[c].hex}66"><b style="color:${CHARS[c].hex}">${CHARS[c].name} · ${tx(CHARS[c].role)}</b>${s}</div></div>`).join("")}</div>
+ <div class="narr">${t("narr")}</div>
+ <div class="row" style="justify-content:center;margin:6px 0">${CORE.map(k=>`<div class="patch">${patchSvg(k,"none",64)}<span>${MISSIONS[k].name.replace(/ \(LRO\)/,"")}</span></div>`).join("")}</div>
+ <div class="row end"><button class="btn" data-go="menu">${t("begin")}</button></div>`;
+}
+function scMenu(){
+ const n=patchCount();
+ return `<div class="row" style="justify-content:space-between;margin-top:14px"><div><div class="eyebrow">${t("rankL")}</div><h1 style="margin-top:2px">${t("ranks")[n]}</h1></div><button class="btn ghost" data-go="story">${t("storyBtn")}</button></div>
+ <div class="card"><h3>${t("board")}</h3><p class="small mut">${t("boardTx")}</p>
+ <div class="patches" style="margin-top:8px">${CORE.map(k=>{const st=pState(k);return `<div class="patch">${patchSvg(k,st)}<span>${st==="gold"?t("pGold"):st==="ok"?t("pOk"):t("pNone")}</span></div>`}).join("")}
+ <div class="small" style="font-family:var(--f-mono)">${n} / 3</div></div></div>
+ ${n===3?`<div class="card cert"><div class="row" style="justify-content:center">${Object.keys(CHARS).map(c=>avatar(c,44)).join("")}</div><h2>🎖️ ${t("certT")}</h2><p style="margin:auto">${t("certTx")}</p></div>`:""}
+ <h2 style="margin-top:18px">${t("choose")}</h2>
+ <div class="grid">${CORE.map(k=>[k,MISSIONS[k]]).map(([k,m])=>`<button class="opt" data-m="${k}">
+  <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap"><div style="min-width:0"><div class="eyebrow">${tx(m.goal)}</div><h3 style="margin-top:4px">${m.name}</h3></div>${patchSvg(k,pState(k),46)}</div>
+  <div class="small mut">${tx(m.type)} · ${m.massLaunch.toLocaleString(L==="pt"?"pt-BR":"en-US")} kg</div>
+  <div class="small" style="margin-top:8px">${tagG()} ${tx(m.game.feel)}</div></button>`).join("")}</div>
+ <h2 style="margin-top:18px">${t("ownH")}</h2>
+ <button class="opt" data-m="OWN" ${n<3?"disabled":""} style="${n<3?"opacity:.6":"border-color:var(--accent)"}">
+  <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap"><div style="min-width:0"><div class="eyebrow">${tx(MISSIONS.OWN.goal)}</div><h3 style="margin-top:4px">${n<3?"🔒 ":""}Capy Ice Scout</h3></div>${patchSvg("OWN",pState("OWN"),46)}</div>
+  <div class="small">${tagF()} ${n<3?t("ownLock"):t("ownOpen")}</div></button>
+ ${PROG.OWN&&PROG.OWN.orbit?`<div class="card cert"><h2>🌕 ${t("finalT")}</h2><p style="margin:auto">${t("finalTx")}</p></div>`:""}
+ <div class="card"><h3>${t("how")}</h3><ol style="margin:0;padding-left:20px;line-height:1.6">${t("howTx").map(x=>`<li>${x}</li>`).join("")}</ol></div>
+ <div class="card"><h3>${t("rules")} ${tagR()} ${tagG()}</h3><p class="small">${t("rulesTx")}</p></div>`;
+}
+function scBrief(){
+ const m=MISSIONS[G.mission];
+ if(m.fict) return `<div class="eyebrow" style="margin-top:14px">${t("brief")} · ${t("fict")}</div><h2>${m.name}</h2>${who("luna")}
+ <div class="card"><h3>${t("why")} ${tagF()}</h3><p>${tx(WHY.OWN)}</p></div>
+ <div class="card"><h3>${t("obj")} ${tagG()}</h3><div class="goalbox">${t("objs").map((o,i)=>`<div><div class="n">0${i+1}</div><b>${o[0]}</b><p class="small" style="margin:4px 0 0">${o[1]}</p></div>`).join("")}</div></div>
+ ${who("iara")}
+ <div class="card"><h3>${t("designH")} ${tagF()}</h3><p class="small mut">${t("designTx")}</p><ul style="margin:6px 0 0;padding-left:20px;line-height:1.6">${m.design.map(e=>`<li>${tx(e)}</li>`).join("")}</ul></div>
+ <div class="card"><h3>${t("inGame")} ${tagG()}</h3><p class="small">${tx(m.game.feel)} Δv ${m.game.dv} · ${L==="pt"?"aceleração":"acceleration"} ${m.game.acc}</p></div>
+ <div class="row end"><button class="btn ghost" data-go="menu">${t("back")}</button><button class="btn" data-fly>${t("fly")}</button></div>`;
+ const d=new Date(m.date+"T12:00:00").toLocaleDateString(L==="pt"?"pt-BR":"en-US",{day:"numeric",month:"long",year:"numeric"});
+ return `<div class="eyebrow" style="margin-top:14px">${t("brief")}</div><h2>${m.name}</h2>${who("luna")}
+ <div class="card"><h3>${t("why")} ${tagR()}</h3><p>${tx(WHY[G.mission])}</p></div>
+ <div class="card"><h3>${t("obj")} ${tagG()}</h3><div class="goalbox">${t("objs").map((o,i)=>`<div><div class="n">0${i+1}</div><b>${o[0]}</b><p class="small" style="margin:4px 0 0">${o[1]}</p></div>`).join("")}</div></div>
+ ${who("tito")}
+ <div class="card"><h3>${L==="pt"?"Ficha da missão":"Mission sheet"} ${tagR()}</h3><div class="tscroll"><table>
+  <tr><th>${L==="pt"?"Objetivo":"Goal"}</th><td>${tx(m.goal)}</td></tr>
+  <tr><th>${t("mass")}</th><td>${m.massLaunch.toLocaleString(L==="pt"?"pt-BR":"en-US")} kg</td></tr>
+  <tr><th>${t("rocket")}</th><td>${tx(m.launcher)}</td></tr>
+  <tr><th>${t("date")}</th><td>${d}</td></tr>
+  <tr><th>${t("orbit")}</th><td>${tx(m.orbit)}</td></tr>
+  ${m.extra.map(e=>`<tr><th>•</th><td>${tx(e)}</td></tr>`).join("")}</table></div>
+  <div class="src">${t("src")}: ${m.src}</div></div>
+ <div class="card"><h3>${t("inGame")} ${tagG()}</h3><p class="small">${tx(m.game.feel)} Δv ${m.game.dv} · ${L==="pt"?"aceleração":"acceleration"} ${m.game.acc}</p></div>
+ <div class="row end"><button class="btn ghost" data-go="menu">${t("back")}</button><button class="btn" data-fly>${t("fly")}</button></div>`;
+}
+function scReport(){
+ const m=MISSIONS[G.mission], tot=G.log.length, hits=G.log.filter(x=>x.ok).length;
+ const ok=G.result==="win", gold=ok&&hits===tot;
+ const before=patchCount(); const pr=PROG[G.mission]||{orbit:false,gold:false};
+ PROG[G.mission]={orbit:pr.orbit||ok,gold:pr.gold||gold}; saveProg();
+ const st=gold?"gold":ok?"ok":"none", n=patchCount(), rankUp=n>before;
+ return `<div class="eyebrow" style="margin-top:14px">${t("rep")}</div><h2>${m.name}</h2>
+ <div class="card"><div class="row">${patchSvg(G.mission,st,84)}<div style="min-width:0"><h3 style="margin:0">${gold?t("gotGold"):ok?t("gotPatch"):t("noPatch")}</h3>
+  ${m.fict?"":`<p class="small mut">${t("rankL")}: <b style="color:var(--fg)">${t("ranks")[n]}</b>${rankUp?" ⬆":""} · ${n}/3</p>`}</div></div></div>
+ ${n===3&&rankUp?`<div class="card cert"><div class="row" style="justify-content:center">${Object.keys(CHARS).map(c=>avatar(c,44)).join("")}</div><h2>🎖️ ${t("certT")}</h2><p style="margin:auto">${t("certTx")}</p></div>`:""}
+ <div class="card"><div style="font-size:24px;color:#ffd166;letter-spacing:2px">${"★".repeat(hits)}<span style="opacity:.25">${"★".repeat(Math.max(0,tot-hits))}</span></div>
+ <p><b>${hits}/${tot}</b> · ${ok?t("captureOk"):t("captureNo")} · ${t("fuelLeft")}: <b>${G.fuelPct}%</b></p></div>
+ <div class="card tscroll"><table><tr><th>${t("step")}</th><th>${t("yours")}</th><th>${t("real")}</th><th></th></tr>
+ ${G.log.map(x=>`<tr><td>${x.step()}</td><td>${x.mine()}</td><td>${x.real()}</td><td>${x.ok?"✅":"↔️"}</td></tr>`).join("")}</table></div>
+ ${m.fict?`<div class="card ${ok?"cert":""}"><h3>${ok?"🌕 "+t("finalT"):t("ownEndNo")} ${tagF()}</h3><p>${tx(ok?m.outcome:m.outcomeNo)}</p>${ok?`<p class="small mut">${t("finalTx")}</p>`:""}</div>`:`<div class="card"><h3>${t("realLife")} ${tagR()}</h3><p>${tx(m.outcome)}</p>${ok&&!m.realOk?`<div class="warn">${t("realDiff")}</div>`:""}<div class="src">${t("src")}: ${m.src}</div></div>`}
+ <div class="row end"><button class="btn ghost" data-go="menu">${t("menu")}</button><button class="btn" data-fly>${t("retry")}</button></div>`;
+}
+function bindScreen(){
+ document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{G.mission=b.dataset.m;show("brief")});
+ document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>show(b.dataset.go));
+ document.querySelectorAll("[data-fly]").forEach(b=>b.onclick=startFlight);
+ window.scrollTo({top:0});
+}
+function logEntry(step,mine,real,ok){G.log.push({step,mine,real,ok});if(ok)G.stars++;$("starPill").textContent="★ "+G.stars}
+
+/* ===== MODAL DE CARTA ===== */
+let modalCb=null;
+function openCard(id,{flight,onDone}){
+ const c=CARDS[id],k=KIND[c.kind],isOwn=c.own===G.mission;G.picked=null;modalCb=onDone;
+ const draw=()=>{
+  const ans=G.picked!=null; let eff=null;
+  if(ans&&flight&&EFFECTS[id]) eff=EFFECTS[id](G.picked);
+  $("modalCard").innerHTML=`${who(c.who)}
+  <div class="row"><span class="tag" style="background:${k.c};color:#fff">${tx(k)}</span><span class="small mut">${tx(c.when)}</span></div>
+  <div class="small" style="margin-top:6px;color:${isOwn?"var(--accent2)":"var(--mut)"}">${isOwn?t("own"):t("arch")}</div>
+  <h2>${tx(c.title)}</h2><p>${tagR()} ${tx(c.fact)}</p>
+  <div class="grid" style="margin-top:10px">${c.opts.map((o,i)=>{let cl="";if(ans){if(i===c.ans)cl="right";else if(G.picked===i)cl="wrong"}
+   return `<button class="opt ${cl}" data-c="${i}" ${ans?"disabled":""}>${String.fromCharCode(65+i)}) ${tx(o)}</button>`}).join("")}</div>
+  ${ans?`<div class="nasa"><b>${G.picked===c.ans?t("match"):t("nomatch")}</b><h3 style="margin-top:8px">${t("whatNasa")}</h3><div>${tx(c.nasa)}</div></div>`:""}
+  ${eff?`<div class="effect"><b>${t("effect")}</b> ${tagG()}<div>${tx(eff)}</div></div>`:""}
+  <div class="src">${t("src")}: ${c.src}</div>
+  ${ans?`<div class="row end"><button class="btn" id="cardNext">${t("cont")}</button></div>`:""}`;
+  $("modalCard").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{G.picked=+b.dataset.c;const pk=G.picked;
+   logEntry(()=>tx(c.title),()=>tx(c.opts[pk]),()=>tx(c.opts[c.ans]),pk===c.ans);draw()});
+  const nb=$("cardNext"); if(nb){nb.focus();nb.onclick=()=>{$("modal").style.display="none";const e=eff;modalCb&&modalCb(e)}}
+ };
+ modalRedraw=draw; draw(); $("modal").style.display="block"; $("modal").scrollTop=0;
+}
+let modalRedraw=null;
+
+/* ===== FÍSICA (cônicas remendadas, mundo 1000×600) ===== */
+const W=1000,H=600;
+const E={x:170,y:430,mu:324000,R:46}, M={x:830,y:170,mu:30000,R:24,soi:170};
+const R0=95, DEM=Math.hypot(M.x-E.x,M.y-E.y);
+function accel(x,y){const dx=M.x-x,dy=M.y-y,r=Math.hypot(dx,dy);
+ if(r<M.soi){const a=M.mu/(r*r*r);return [dx*a,dy*a,1]}
+ const ex=E.x-x,ey=E.y-y,re=Math.hypot(ex,ey),b=E.mu/(re*re*re);return [ex*b,ey*b,0]}
+let F=null; // estado do voo
+function startFlight(){
+ const m=MISSIONS[G.mission]; G.log=[];G.stars=0;G.result=null;G.sciIdx=0;
+ const th=Math.PI*.55; // começa abaixo-direita da Terra, órbita anti-horária na tela
+ const v=Math.sqrt(E.mu/R0);
+ F={x:E.x+R0*Math.cos(th),y:E.y+R0*Math.sin(th),vx:-Math.sin(th)*v,vy:Math.cos(th)*v,
+  hd:Math.atan2(Math.cos(th),-Math.sin(th)),fuel:m.game.dv,fuel0:m.game.dv,acc:m.game.acc,mul:1,
+  lock:0,engLock:0,spin:0,loose:false,abandon:false,warp:false,hold:0,t:0,noFuelT:0,
+  trail:[],events:m.flight.map(([id,p])=>({id,p,done:false})),paused:false,over:false,firing:false,dom:0,maxP:0};
+ show("flight"); setStatus();
+}
+function step(h){
+ const thrusting=keys.thrust&&F.fuel>0&&F.lock<=0&&F.engLock<=0;
+ let [ax,ay,dom]=accel(F.x,F.y);
+ if(thrusting){const a=F.acc*F.mul;ax+=Math.cos(F.hd)*a;ay+=Math.sin(F.hd)*a;F.fuel=Math.max(0,F.fuel-a*h)}
+ F.vx+=ax*h;F.vy+=ay*h;F.x+=F.vx*h;F.y+=F.vy*h;F.dom=dom;F.firing=thrusting;F.t+=h;
+ if(F.lock>0)F.lock-=h; if(F.engLock>0)F.engLock-=h; if(F.spin>0){F.spin-=h;F.hd+=4*h}
+}
+function relBody(){return F.dom?M:E}
+function moonOrbit(){ // elementos da órbita em torno da Lua (2 corpos)
+ const rx=F.x-M.x,ry=F.y-M.y,vx=F.vx,vy=F.vy,r=Math.hypot(rx,ry),v2=vx*vx+vy*vy;
+ const en=v2/2-M.mu/r; if(en>=0) return null;
+ const a=-M.mu/(2*en),hh=rx*vy-ry*vx,e=Math.sqrt(Math.max(0,1+2*en*hh*hh/(M.mu*M.mu)));
+ return {rp:a*(1-e),ra:a*(1+e)};
+}
+function predict(n=700,h=.05){
+ const pts=[];let x=F.x,y=F.y,vx=F.vx,vy=F.vy;
+ for(let i=0;i<n;i++){const [ax,ay]=accel(x,y);vx+=ax*h;vy+=ay*h;x+=vx*h;y+=vy*h;
+  if(i%3===0)pts.push([x,y]);
+  if(Math.hypot(x-E.x,y-E.y)<E.R||Math.hypot(x-M.x,y-M.y)<M.R||x<-400||x>1400||y<-400||y>1000)break}
+ return pts;
+}
+
+/* ===== CONTROLES ===== */
+const keys={left:false,right:false,thrust:false};let hold=null; // 'pro' | 'retro'
+const KMAP={ArrowLeft:"left",a:"left",A:"left",ArrowRight:"right",d:"right",D:"right",ArrowUp:"thrust",w:"thrust",W:"thrust"," ":"thrust"};
+addEventListener("keydown",e=>{if(G.phase!=="flight"||$("modal").style.display==="block")return;
+ if(KMAP[e.key]){keys[KMAP[e.key]]=true;if(KMAP[e.key]!=="thrust")hold=null;e.preventDefault()}
+ else if(e.key==="p"||e.key==="P")toggleHold("pro"); else if(e.key==="r"||e.key==="R")toggleHold("retro");
+ else if(e.key==="t"||e.key==="T")toggleWarp(); padSync()});
+addEventListener("keyup",e=>{if(KMAP[e.key]){keys[KMAP[e.key]]=false;padSync()}});
+function toggleHold(k){hold=hold===k?null:k;padSync()}
+function toggleWarp(){if(F)F.warp=!F.warp;padSync()}
+function padSync(){$("proBtn").classList.toggle("on",hold==="pro");$("retroBtn").classList.toggle("on",hold==="retro");
+ $("thrBtn").classList.toggle("on",keys.thrust);$("warpBtn").classList.toggle("on",!!(F&&F.warp))}
+document.querySelectorAll("#pad button").forEach(b=>{const k=b.dataset.k;
+ if(["left","right","thrust"].includes(k)){
+  const on=e=>{e.preventDefault();keys[k]=true;if(k!=="thrust")hold=null;padSync()},off=e=>{e.preventDefault();keys[k]=false;padSync()};
+  b.addEventListener("pointerdown",on);b.addEventListener("pointerup",off);b.addEventListener("pointerleave",off);b.addEventListener("pointercancel",off);
+ } else b.addEventListener("click",()=>{if(k==="pro"||k==="retro")toggleHold(k);else if(k==="warp")toggleWarp();else if(k==="reset")startFlight()})});
+
+/* ===== LOOP ===== */
+const cv=$("cv"),ctx=cv.getContext("2d");let scale=1,ox=0,oy=0,dpr=1;
+const bgStars=[...Array(160)].map(()=>[Math.random()*W,Math.random()*H,Math.random()*1.4+.3,Math.random()]);
+function resizeCanvas(){dpr=devicePixelRatio||1;const r=cv.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;
+ scale=Math.min(cv.width/W,cv.height/H);ox=(cv.width-W*scale)/2;oy=(cv.height-H*scale)/2}
+addEventListener("resize",()=>{if(G.phase==="flight")resizeCanvas()});
+let last=performance.now();
+function loop(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(G.phase==="flight"&&F&&!F.paused&&!F.over){
+  // rotação (tempo real)
+  const canTurn=F.lock<=0&&F.spin<=0;
+  if(canTurn){
+   if(keys.left)F.hd-=2.6*dt; if(keys.right)F.hd+=2.6*dt;
+   if(hold){const b=relBody();let ang=Math.atan2(F.vy,F.vx);if(hold==="retro")ang+=Math.PI;
+    let d=((ang-F.hd+Math.PI*3)%(Math.PI*2))-Math.PI;F.hd+=Math.max(-3.5*dt,Math.min(3.5*dt,d))}
+  }
+  const ts=F.warp?8:3,h=.01,n=Math.round(ts*dt/h);
+  for(let i=0;i<n&&!F.over;i++){step(h);checkState(h)}
+  if(F.trail.length===0||Math.hypot(F.trail[F.trail.length-1][0]-F.x,F.trail[F.trail.length-1][1]-F.y)>4){F.trail.push([F.x,F.y]);if(F.trail.length>500)F.trail.shift()}
+  // eventos por progresso
+  const p=(Math.hypot(F.x-E.x,F.y-E.y)-R0)/(DEM-R0);F.maxP=Math.max(F.maxP,p);
+  const ev=F.events.find(e=>!e.done&&F.maxP>=e.p);
+  if(ev&&!F.over){ev.done=true;F.paused=true;keys.thrust=keys.left=keys.right=false;hold=null;padSync();
+   openCard(ev.id,{flight:true,onDone:eff=>{if(eff)eff.f(F);F.paused=false;last=performance.now();if(F.abandon)endFlight("abandon")}})}
+  hud();
+ }
+ if(G.phase==="flight"&&F)draw(now);
+ requestAnimationFrame(loop);
+}
+function checkState(h){
+ const de=Math.hypot(F.x-E.x,F.y-E.y),dm=Math.hypot(F.x-M.x,F.y-M.y);
+ if(de<E.R) return endFlight("earth"); if(dm<M.R) return endFlight("moon");
+ if(F.x<-350||F.x>1350||F.y<-350||F.y>950) return endFlight("lost");
+ if(dm<M.soi){const o=moonOrbit(),lim=F.loose?{rp:M.R+3,ra:M.soi-2}:{rp:M.R+6,ra:M.soi-12};
+  if(o&&o.rp>lim.rp&&o.ra<lim.ra)F.hold+=h;else F.hold=0;
+  if(F.hold>=3) return endFlight("win");
+ } else F.hold=0;
+ if(F.fuel<=0&&!F.hold){F.noFuelT+=h;if(F.noFuelT>45)return endFlight("fuel")}
+}
+function setStatus(){const s=t("st");let m;
+ if(!F)return; if(F.lock>0)m=s.lock;else if(F.spin>0)m=s.spin;else if(F.engLock>0)m=s.eng;else if(F.hold>0)m=s.hold+" "+Math.max(0,3-F.hold).toFixed(1)+" s";
+ else if(F.dom)m=s.soi;else if(F.maxP<.08)m=s.orbit;else if(F.fuel<=0)m=s.nofuel;else m=s.coast;
+ $("status").textContent="› "+m}
+function hud(){$("hFuel").textContent=F.fuel.toFixed(1)+" / "+F.fuel0;const pc=F.fuel/F.fuel0*100;
+ $("hFuelBar").style.width=pc+"%";$("hFuelBar").style.background=pc<25?"var(--bad)":pc<50?"var(--accent)":"var(--ok)";
+ const b=relBody();$("hSpd").textContent=Math.hypot(F.vx,F.vy).toFixed(1);
+ $("hDist").textContent=Math.max(0,Math.hypot(F.x-M.x,F.y-M.y)-M.R).toFixed(0);$("hDom").textContent=F.dom?t("moon"):t("earth");setStatus()}
+function endFlight(r){
+ if(F.over)return; F.over=true;keys.thrust=false;padSync();G.result=r;G.fuelPct=Math.round(F.fuel/F.fuel0*100);
+ const win=r==="win";
+ logEntry(()=>t("capture"),()=>win?t("captureOk"):t("captureNo"),()=>MISSIONS[G.mission].realOk?t("captureOk"):t("captureNo"),win);
+ // eventos de voo que não aconteceram viram lições na fase científica
+ const m=MISSIONS[G.mission];
+ G.sciQueue=win?[...F.events.filter(e=>!e.done).map(e=>e.id),...m.science]:[];
+ setTimeout(()=>{
+  $("modalCard").innerHTML=`<div class="eyebrow">${m.name}</div><h2>${win?"🌕 "+t("win"):t("fail")[r]}</h2>
+  ${win?`<div class="row">${patchSvg(G.mission,"ok",64)}<p style="min-width:0"><b>${t("gotPatch")}</b><br>${t("sciTx")}</p></div>`:`<p>${t("noPatch")}</p>`}<p class="small mut">${t("fuelLeft")}: ${G.fuelPct}%</p>
+  <div class="row end">${win?"":`<button class="btn ghost" id="mRetry">${t("retry")}</button>`}<button class="btn" id="mNext">${win?t("sci"):t("report")}</button></div>`;
+  $("modal").style.display="block";
+  const rt=$("mRetry");if(rt)rt.onclick=()=>{$("modal").style.display="none";startFlight()};
+  $("mNext").onclick=()=>{$("modal").style.display="none";win?nextScience():show("report")};
+ },win?900:600);
+}
+function nextScience(){const id=G.sciQueue.shift();if(!id){show("report");return}
+ openCard(id,{flight:false,onDone:()=>nextScience()})}
+
+/* ===== DESENHO ===== */
+function draw(now){
+ ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#050b1d";ctx.fillRect(0,0,cv.width,cv.height);
+ ctx.setTransform(scale,0,0,scale,ox,oy);
+ bgStars.forEach(s=>{ctx.globalAlpha=.35+.45*Math.abs(Math.sin(now/1400+s[3]*6));ctx.fillStyle="#fff";ctx.fillRect(s[0],s[1],s[2],s[2])});ctx.globalAlpha=1;
+ // esfera de influência da Lua
+ ctx.setLineDash([5,7]);ctx.strokeStyle=F.dom?"#ffd08a88":"#a9b7d944";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(M.x,M.y,M.soi,0,7);ctx.stroke();ctx.setLineDash([]);
+ // Terra
+ let g=ctx.createRadialGradient(E.x,E.y,E.R*.6,E.x,E.y,E.R*1.5);g.addColorStop(0,"#3aa0ff55");g.addColorStop(1,"#3aa0ff00");ctx.fillStyle=g;ctx.beginPath();ctx.arc(E.x,E.y,E.R*1.5,0,7);ctx.fill();
+ ctx.fillStyle="#1f5fb8";ctx.beginPath();ctx.arc(E.x,E.y,E.R,0,7);ctx.fill();
+ ctx.save();ctx.beginPath();ctx.arc(E.x,E.y,E.R,0,7);ctx.clip();ctx.fillStyle="#2fbf8f";
+ [[-14,-18,16,10],[10,6,20,12],[-22,16,10,7],[18,-22,9,6]].forEach(c=>{ctx.beginPath();ctx.ellipse(E.x+c[0],E.y+c[1],c[2],c[3],.4,0,7);ctx.fill()});ctx.restore();
+ // Lua
+ ctx.fillStyle="#cfd3dc";ctx.beginPath();ctx.arc(M.x,M.y,M.R,0,7);ctx.fill();ctx.fillStyle="#aab0bd";
+ [[.3,.2,.22],[-.35,-.1,.15],[.05,-.4,.12],[-.1,.35,.1]].forEach(c=>{ctx.beginPath();ctx.arc(M.x+c[0]*M.R,M.y+c[1]*M.R,c[2]*M.R,0,7);ctx.fill()});
+ ctx.font="12px 'Space Mono', monospace";ctx.fillStyle="#a9b7d9";ctx.fillText(t("earth"),E.x-18,E.y+E.R+18);ctx.fillText(t("moon"),M.x-14,M.y+M.R+16);
+ // rastro
+ ctx.strokeStyle="#3aa0ff66";ctx.lineWidth=1.5;ctx.beginPath();F.trail.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();
+ // previsão
+ if(!F.over){const pts=predict();ctx.strokeStyle=F.hold>0?"#3cc47c":"#f08a24";ctx.setLineDash([3,5]);ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(F.x,F.y);pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([])}
+ // nave
+ const sz=7*MISSIONS[G.mission].game.size;ctx.save();ctx.translate(F.x,F.y);ctx.rotate(F.hd);
+ if(F.firing){ctx.fillStyle="#ffb347";ctx.beginPath();ctx.moveTo(-sz,-sz*.45);ctx.lineTo(-sz*(2.2+Math.random()*.8),0);ctx.lineTo(-sz,sz*.45);ctx.fill()}
+ ctx.fillStyle="#eef3ff";ctx.beginPath();ctx.moveTo(sz*1.3,0);ctx.lineTo(-sz,-sz*.75);ctx.lineTo(-sz*.6,0);ctx.lineTo(-sz,sz*.75);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#f08a24";ctx.fillRect(-sz*.9,-sz*1.6,sz*.5,sz*.8);ctx.fillRect(-sz*.9,sz*.8,sz*.5,sz*.8);
+ ctx.restore();
+ if(F.lock>0){ctx.fillStyle="#e85d5d";ctx.font="bold 13px 'Space Mono', monospace";ctx.fillText("NO SIGNAL",F.x+12,F.y-12)}
+ if(F.over&&G.result==="win"){ctx.strokeStyle="#3cc47c";ctx.lineWidth=2;ctx.beginPath();ctx.arc(M.x,M.y,Math.hypot(F.x-M.x,F.y-M.y),0,7);ctx.stroke()}
+}
+
+/* ===== INÍCIO ===== */
+document.querySelectorAll(".lang button").forEach(b=>b.onclick=()=>{L=b.dataset.l;document.querySelectorAll(".lang button").forEach(x=>x.classList.toggle("on",x===b));render();if($("modal").style.display==="block"&&modalRedraw&&G.picked!==undefined&&F&&F.paused)modalRedraw()});
+render();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
