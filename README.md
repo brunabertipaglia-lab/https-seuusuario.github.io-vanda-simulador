@@ -12,6 +12,15 @@ Jogo educativo da equipe **CAPI TINKERING** para o NASA Space Apps Challenge 202
 | [docs/04_DECISOES_E_BACKLOG.md](docs/04_DECISOES_E_BACKLOG.md) | Registro de decisões e backlog priorizado |
 | [docs/05_IDENTIDADE_VISUAL.md](docs/05_IDENTIDADE_VISUAL.md) | Paleta extraída do logo, contraste, arte incorporada e pendências de marca |
 
+## Jogo web: Capybara to the Moon
+
+O arquivo [jogo/index.html](jogo/index.html) é um jogo independente, que roda no navegador sem instalação e não depende do projeto Unity. A família Capivara pilota três missões lunares reais da NASA (LRO, CAPSTONE e Lunar Flashlight) e enfrenta problemas que aconteceram de verdade. Cada decisão é comparada com a dos engenheiros. Os emblemas conquistados liberam a missão fictícia da família, a Capy Ice Scout.
+
+- **Jogar localmente:** abra `jogo/index.html` no navegador.
+- **Idiomas:** inglês (padrão) e português.
+- **Rótulos:** "Real data" marca dados reais com fonte, "Game rule" marca simplificações e regras do jogo, e "Game fiction" marca a história e a missão da família.
+- **Física:** cônicas remendadas, com a Terra e a Lua fixas. É um modelo didático, não uma trajetória real.
+
 ## Início rápido
 
 ```bash
